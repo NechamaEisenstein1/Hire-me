@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.password import hash_password
@@ -16,7 +17,11 @@ class UsersRepository:
             role="viewer",
         )
         self.session.add(user)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise ValueError("Email already registered") from exc
         await self.session.refresh(user)
         return user
 

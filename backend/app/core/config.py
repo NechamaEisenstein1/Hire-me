@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     app_secret_key: str = "change-me"
     jwt_algorithm: str = "HS256"
     jwt_access_token_expires_minutes: int = 30
+    jwt_refresh_token_expires_days: int = 30
 
     rate_limit_requests_per_minute: int = 120
 

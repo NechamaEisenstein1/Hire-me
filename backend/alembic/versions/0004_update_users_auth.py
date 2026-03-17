@@ -17,8 +17,25 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")))
-    op.add_column("users", sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False))
+    op.add_column(
+        "users",
+        sa.Column(
+            "is_active",
+            sa.Boolean(),
+            nullable=False,
+            server_default=sa.text("true"),
+        ),
+    )
+    op.add_column(
+        "users",
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            onupdate=sa.func.now(),
+            nullable=False,
+        ),
+    )
 
 
 def downgrade() -> None:
