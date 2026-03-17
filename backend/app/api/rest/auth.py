@@ -20,6 +20,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 async def register(
     payload: UserRegister, session: AsyncSession = Depends(get_db_session)
 ) -> UserRead:
+    """Register a new user with email and password."""
     repo = UsersRepository(session)
     existing_user = await repo.get_user_by_email(payload.email)
     if existing_user:
@@ -34,7 +35,6 @@ async def register(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already registered",
         ) from exc
-
     return UserRead(
         id=user.id,
         email=user.email,
@@ -48,6 +48,7 @@ async def register(
 async def login(
     payload: LoginRequest, session: AsyncSession = Depends(get_db_session)
 ) -> TokenResponse:
+    """Authenticate user and return JWT access + refresh tokens."""
     repo = UsersRepository(session)
     user = await repo.get_user_by_email(payload.email)
 
@@ -58,7 +59,6 @@ async def login(
 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
-
     access_token = create_access_token(subject=str(user.id))
     refresh_token = create_refresh_token(subject=str(user.id))
 
@@ -69,14 +69,23 @@ async def login(
 async def refresh(
     payload: RefreshTokenRequest, session: AsyncSession = Depends(get_db_session)
 ) -> TokenResponse:
+    """Exchange a refresh token for a new access token."""
     user_id = verify_token(payload.refresh_token, token_type="refresh")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
         )
 
+    try:
+        user_id_int = int(user_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        ) from exc
+
     repo = UsersRepository(session)
-    user = await repo.get_user_by_id(int(user_id))
+    user = await repo.get_user_by_id(user_id_int)
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -85,5 +94,4 @@ async def refresh(
 
     access_token = create_access_token(subject=user_id)
     refresh_token = create_refresh_token(subject=user_id)
-
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)

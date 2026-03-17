@@ -1,9 +1,9 @@
 from app.core.config import get_settings
 
-settings = get_settings()
-
 
 async def answer_interview_question(question: str) -> str:
+    # Resolve settings at call-time to avoid module import side effects.
+    settings = get_settings()
     provider = settings.ai_provider.lower()
 
     if provider == "groq":

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.graphql.schema import graphql_router
@@ -10,7 +11,7 @@ from app.api.rest.health import router as health_router
 from app.api.rest.projects import router as projects_router
 from app.api.ws.visitors import router as visitors_ws_router
 from app.core.config import get_settings
-from app.core.rate_limit import limiter
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 
 settings = get_settings()
 
@@ -31,6 +32,9 @@ app.add_middleware(
 
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
+
+# Register rate limit exceeded exception handler
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 app.include_router(health_router)
 app.include_router(auth_router)
