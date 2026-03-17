@@ -1,0 +1,23 @@
+name: Infra Plan
+
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+      - 'ci/github/workflows/infra-plan.yml'
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Fmt
+        run: terraform fmt -check
+      - name: Init
+        run: terraform init -input=false
+      - name: Validate
+        run: terraform validate
