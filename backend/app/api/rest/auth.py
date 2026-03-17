@@ -22,11 +22,6 @@ async def register(
 ) -> UserRead:
     """Register a new user with email and password."""
     repo = UsersRepository(session)
-    existing_user = await repo.get_user_by_email(payload.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
-        )
 
     try:
         user = await repo.create_user(email=payload.email, password=payload.password)
