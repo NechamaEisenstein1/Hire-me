@@ -1,0 +1,85 @@
+# OS and editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+secrets/
+
+# Logs and runtime artifacts
+*.log
+logs/
+*.pid
+*.seed
+*.out
+*.err
+coverage/
+htmlcov/
+
+# Python backend
+backend/.venv/
+backend/venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.coverage
+backend/.hypothesis/
+backend/dist/
+backend/build/
+backend/*.egg-info/
+
+# Alembic and DB local artifacts
+backend/alembic/versions/__pycache__/
+backend/*.sqlite3
+
+# Node / Angular frontend
+frontend/node_modules/
+frontend/.angular/
+frontend/.cache/
+frontend/dist/
+frontend/.eslintcache
+frontend/coverage/
+frontend/tmp/
+
+# PWA / build cache
+frontend/public/sw.js
+frontend/public/workbox-*.js
+
+# Docker
+**/.docker/
+*.tar
+
+# Terraform and IaC
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/crash.log
+infra/terraform/override.tf
+infra/terraform/override.tf.json
+infra/terraform/*_override.tf
+infra/terraform/*_override.tf.json
+
+# AWS SAM / CDK (if added later)
+.aws-sam/
+cdk.out/
+
+# Test and reports
+reports/
+test-results/
+playwright-report/
+
+# Misc
+*.tmp
+*.bak
