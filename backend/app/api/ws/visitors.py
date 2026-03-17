@@ -14,5 +14,5 @@ async def visitors_socket(websocket: WebSocket) -> None:
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)
         await manager.broadcast({"active_visitors": manager.metrics["active_visitors"]})

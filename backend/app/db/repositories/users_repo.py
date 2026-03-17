@@ -59,6 +59,6 @@ class UsersRepository:
         if not user:
             return False
         
-        await self.session.delete(user)
+        self.session.delete(user)
         await self.session.commit()
         return True
