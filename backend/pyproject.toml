@@ -3,7 +3,6 @@ name = "hire-me-backend"
 version = "0.1.0"
 description = "Production backend for Hire Me portfolio"
 authors = ["Your Name <you@example.com>"]
-readme = "../README.md"
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
