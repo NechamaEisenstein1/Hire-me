@@ -1,5 +1,6 @@
 """Repository for user data access operations."""
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.password import hash_password
@@ -29,7 +30,11 @@ class UsersRepository:
         hashed_password = hash_password(password)
         user = User(email=email, password_hash=hashed_password, role="viewer")
         self.session.add(user)
-        await self.session.commit()
+        try:
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise ValueError("Email already registered") from exc
         await self.session.refresh(user)
         return user
 
@@ -44,11 +49,11 @@ class UsersRepository:
         user = await self.get_user_by_id(user_id)
         if not user:
             return None
-        
+
         for key, value in kwargs.items():
             if hasattr(user, key) and key != "id":
                 setattr(user, key, value)
-        
+
         await self.session.commit()
         await self.session.refresh(user)
         return user
@@ -58,7 +63,7 @@ class UsersRepository:
         user = await self.get_user_by_id(user_id)
         if not user:
             return False
-        
+
         self.session.delete(user)
         await self.session.commit()
         return True

@@ -22,18 +22,20 @@ async def register(
 ) -> UserRead:
     """Register a new user with email and password."""
     repo = UsersRepository(session)
-    existing_user = await repo.get_user_by_email(payload.email)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
-        )
 
-    user = await repo.create_user(email=payload.email, password=payload.password)
+    try:
+        user = await repo.create_user(email=payload.email, password=payload.password)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already registered",
+        ) from exc
     return UserRead(
         id=user.id,
         email=user.email,
         role=user.role,
-        created_at=str(user.created_at),
+        is_active=user.is_active,
+        created_at=user.created_at,
     )
 
 
@@ -50,6 +52,8 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password"
         )
 
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
     access_token = create_access_token(subject=str(user.id))
     refresh_token = create_refresh_token(subject=str(user.id))
 
@@ -57,13 +61,32 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(payload: RefreshTokenRequest) -> TokenResponse:
+async def refresh(
+    payload: RefreshTokenRequest, session: AsyncSession = Depends(get_db_session)
+) -> TokenResponse:
     """Exchange a refresh token for a new access token."""
     user_id = verify_token(payload.refresh_token, token_type="refresh")
     if not user_id:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token"
+        )
+
+    try:
+        user_id_int = int(user_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        ) from exc
+
+    repo = UsersRepository(session)
+    user = await repo.get_user_by_id(user_id_int)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
         )
 
     access_token = create_access_token(subject=user_id)
-    return TokenResponse(access_token=access_token, refresh_token=payload.refresh_token)
+    refresh_token = create_refresh_token(subject=user_id)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)

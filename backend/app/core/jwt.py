@@ -11,16 +11,15 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
     settings = get_settings()
     if expires_delta is None:
         expires_delta = timedelta(minutes=settings.jwt_access_token_expires_minutes)
-    
+
     expire = datetime.now(UTC) + expires_delta
     payload = {"sub": subject, "type": "access", "exp": expire}
     return jwt.encode(payload, settings.app_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def create_refresh_token(subject: str) -> str:
-    """Create a JWT refresh token with 30-day expiry."""
     settings = get_settings()
-    expire = datetime.now(UTC) + timedelta(days=30)
+    expire = datetime.now(UTC) + timedelta(days=settings.jwt_refresh_token_expires_days)
     payload = {"sub": subject, "type": "refresh", "exp": expire}
     return jwt.encode(payload, settings.app_secret_key, algorithm=settings.jwt_algorithm)
 
@@ -32,13 +31,13 @@ def verify_token(token: str, token_type: str = "access") -> str | None:
         payload = jwt.decode(token, settings.app_secret_key, algorithms=[settings.jwt_algorithm])
         subject = payload.get("sub")
         token_type_in_payload = payload.get("type", "access")
-        
+
         if not subject:
             return None
-        
+
         if token_type_in_payload != token_type:
             return None
-        
+
         return subject
     except JWTError:
         return None
