@@ -1,0 +1,10 @@
+{
+  "name": "Hire Me",
+  "short_name": "HireMe",
+  "description": "Interactive portfolio with 3D resume, realtime stats, and AI interview chat.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8f4",
+  "theme_color": "#6f9b3d",
+  "icons": []
+}
