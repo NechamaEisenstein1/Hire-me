@@ -16,9 +16,17 @@ export class GraphqlService {
       throw new Error(`GraphQL request failed: ${response.status}`);
     }
 
-    const payload = (await response.json()) as { data?: T; errors?: unknown[] };
+    const payload = (await response.json()) as {
+      data?: T;
+      errors?: Array<{ message?: string } | string>;
+    };
     if (payload.errors?.length) {
-      throw new Error('GraphQL responded with errors');
+      const firstError = payload.errors[0];
+      const errorMessage =
+        typeof firstError === 'string'
+          ? firstError
+          : firstError?.message ?? 'GraphQL responded with errors';
+      throw new Error(`GraphQL responded with errors: ${errorMessage}`);
     }
 
     if (!payload.data) {

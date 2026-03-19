@@ -32,7 +32,7 @@ export class InterviewMePage {
     try {
       this.answer.set(await this.chatbot.ask(this.question));
     } catch {
-      this.answer.set('Chat service is not ready yet. Backend endpoint will be added in the next files.');
+      this.answer.set('Unable to get a response right now. Please try again in a moment.');
     }
   }
 }

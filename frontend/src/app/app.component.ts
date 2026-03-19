@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -29,9 +30,10 @@ import { MatButtonModule } from '@angular/material/button';
 })
 export class AppComponent {
   readonly darkMode = signal(false);
+  private readonly document = inject(DOCUMENT);
 
   toggleTheme(): void {
     this.darkMode.update((value: boolean) => !value);
-    document.documentElement.classList.toggle('dark', this.darkMode());
+    this.document.documentElement.classList.toggle('dark', this.darkMode());
   }
 }

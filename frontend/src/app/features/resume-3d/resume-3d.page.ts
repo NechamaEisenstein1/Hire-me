@@ -16,6 +16,10 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
 
   private renderer?: THREE.WebGLRenderer;
   private animationFrameId?: number;
+  private cardGeometry?: THREE.BoxGeometry;
+  private cardMaterial?: THREE.MeshStandardMaterial;
+  private rotationTween?: gsap.core.Tween;
+  private positionTween?: gsap.core.Tween;
 
   ngAfterViewInit(): void {
     const host = this.canvasHost.nativeElement;
@@ -36,13 +40,13 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     const ambient = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambient);
 
-    const cardGeometry = new THREE.BoxGeometry(1.8, 1.1, 0.1);
-    const cardMaterial = new THREE.MeshStandardMaterial({ color: '#6f9b3d' });
-    const card = new THREE.Mesh(cardGeometry, cardMaterial);
+    this.cardGeometry = new THREE.BoxGeometry(1.8, 1.1, 0.1);
+    this.cardMaterial = new THREE.MeshStandardMaterial({ color: '#6f9b3d' });
+    const card = new THREE.Mesh(this.cardGeometry, this.cardMaterial);
     scene.add(card);
 
-    gsap.to(card.rotation, { y: Math.PI * 2, duration: 8, repeat: -1, ease: 'none' });
-    gsap.to(card.position, { y: 0.35, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+    this.rotationTween = gsap.to(card.rotation, { y: Math.PI * 2, duration: 8, repeat: -1, ease: 'none' });
+    this.positionTween = gsap.to(card.position, { y: 0.35, duration: 2.2, repeat: -1, yoyo: true, ease: 'sine.inOut' });
 
     const render = () => {
       this.renderer?.render(scene, camera);
@@ -56,6 +60,10 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
+    this.rotationTween?.kill();
+    this.positionTween?.kill();
+    this.cardGeometry?.dispose();
+    this.cardMaterial?.dispose();
     this.renderer?.dispose();
   }
 }
