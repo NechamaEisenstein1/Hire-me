@@ -33,9 +33,29 @@ async function toApiError(response: Response): Promise<ApiError> {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = environment.apiBaseUrl;
+  private readonly timeoutMs = environment.apiRequestTimeoutMs;
+
+  private async request(input: string, init?: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      return await fetch(input, { ...init, signal: controller.signal });
+    } catch (error: unknown) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw new ApiError(
+          504,
+          'The request took too long and timed out. Please try again.'
+        );
+      }
+      throw error;
+    } finally {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
 
   async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`);
+    const response = await this.request(`${this.baseUrl}${path}`);
     if (!response.ok) {
       throw await toApiError(response);
     }
@@ -43,7 +63,7 @@ export class ApiService {
   }
 
   async post<T>(path: string, body: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const response = await this.request(`${this.baseUrl}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
