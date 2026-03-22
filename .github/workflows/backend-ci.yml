@@ -1,5 +1,7 @@
 name: Backend CI
 
+# Preflight keeps branch-scoped PRs green when backend is absent.
+
 on:
   push:
     paths:

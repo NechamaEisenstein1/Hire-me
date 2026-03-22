@@ -1,5 +1,7 @@
 name: Infra Plan
 
+# Preflight keeps branch-scoped PRs green when infra is absent.
+
 on:
   pull_request:
     paths:
