@@ -8,18 +8,20 @@ on:
 
 jobs:
   plan:
+    if: ${{ hashFiles('infra/terraform/*.tf') != '' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: infra/terraform
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
       - name: Fmt
+        working-directory: infra/terraform
         run: terraform fmt -check
       - name: Init
+        working-directory: infra/terraform
         run: terraform init -input=false
       - name: Validate
+        working-directory: infra/terraform
         run: terraform validate
       - name: Plan
+        working-directory: infra/terraform
         run: terraform plan -input=false

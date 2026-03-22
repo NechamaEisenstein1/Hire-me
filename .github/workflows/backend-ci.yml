@@ -12,10 +12,8 @@ on:
 
 jobs:
   lint:
+    if: ${{ hashFiles('backend/pyproject.toml') != '' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,8 +22,11 @@ jobs:
       - name: Install Poetry
         run: pip install poetry==1.8.5
       - name: Install deps
+        working-directory: backend
         run: poetry install --no-interaction --no-ansi
       - name: Lint
+        working-directory: backend
         run: poetry run ruff check app
       - name: Type check
+        working-directory: backend
         run: poetry run mypy app
