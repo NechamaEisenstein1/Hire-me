@@ -11,8 +11,26 @@ on:
       - '.github/workflows/backend-ci.yml'
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_exists: ${{ steps.detect.outputs.backend_exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect backend project
+        id: detect
+        shell: bash
+        run: |
+          if [ -f backend/pyproject.toml ]; then
+            echo "backend_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend_exists=false" >> "$GITHUB_OUTPUT"
+            echo "Backend directory not found on this branch, skipping backend lint/type-check by design."
+          fi
+
   lint:
-    if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+    needs: preflight
+    if: ${{ needs.preflight.outputs.backend_exists == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
