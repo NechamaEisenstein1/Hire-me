@@ -1,13 +1,26 @@
-from pydantic import BaseModel
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field, field_validator
 
-from app.services.ai_chat_service import answer_interview_question
+from app.services.ai_chat_service import (
+    AIProviderRequestError,
+    AIProviderResponseError,
+    AIServiceConfigurationError,
+    answer_interview_question,
+)
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("question")
+    @classmethod
+    def validate_question(cls, value: str) -> str:
+        question = value.strip()
+        if not question:
+            raise ValueError("Question must not be empty.")
+        return question
 
 
 class ChatResponse(BaseModel):
@@ -16,5 +29,22 @@ class ChatResponse(BaseModel):
 
 @router.post('/messages', response_model=ChatResponse)
 async def chat(payload: ChatRequest) -> ChatResponse:
-    answer = await answer_interview_question(payload.question)
+    try:
+        answer = await answer_interview_question(payload.question)
+    except AIServiceConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except AIProviderRequestError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc),
+        ) from exc
+    except AIProviderResponseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
+
     return ChatResponse(answer=answer)
