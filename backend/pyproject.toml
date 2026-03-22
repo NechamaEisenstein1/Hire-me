@@ -28,6 +28,7 @@ pytest-asyncio = "^1.2.0"
 ruff = "^0.13.2"
 mypy = "^1.18.2"
 types-passlib = "^1.7.7.20250602"
+types-python-jose = "^3.5.0.20250531"
 
 [tool.ruff]
 line-length = 100
