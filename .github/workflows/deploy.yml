@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy (stub)
 
 on:
   workflow_dispatch:
@@ -7,12 +7,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Build and push images
+      - name: Stub notice
         run: |
-          echo "ERROR: Deploy workflow is a stub. Implement build/push steps before using this workflow."
-          exit 1
-      - name: Terraform apply
-        run: |
-          echo "ERROR: Deploy workflow is a stub. Implement Terraform apply steps before using this workflow."
-          exit 1
+          echo "This workflow is intentionally a stub and currently disabled."
+          echo "Implement real build/push/apply steps before enabling production deploys."
