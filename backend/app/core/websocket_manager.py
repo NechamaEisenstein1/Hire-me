@@ -7,7 +7,7 @@ from fastapi import WebSocket
 class WebSocketManager:
     def __init__(self) -> None:
         self.connections: set[WebSocket] = set()
-        self.metrics: dict[str, int] = defaultdict(int)
+        self.metrics: defaultdict[str, int] = defaultdict(int)
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket) -> None:
