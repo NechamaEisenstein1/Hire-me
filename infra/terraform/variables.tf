@@ -36,6 +36,18 @@ variable "private_subnet_ids" {
   }
 }
 
+variable "rds_allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to connect to PostgreSQL on port 5432"
+  type        = list(string)
+  default     = []
+}
+
+variable "rds_allowed_source_security_group_ids" {
+  description = "Security group IDs allowed to connect to PostgreSQL on port 5432"
+  type        = list(string)
+  default     = []
+}
+
 variable "environment" {
   description = "Environment stage (dev, staging, prod)"
   type        = string
