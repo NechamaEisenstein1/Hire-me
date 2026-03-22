@@ -35,12 +35,14 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
           else
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
+            DIFF_RANGE="$BASE_SHA $HEAD_SHA"
           fi
 
-          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -q '^backend/'; then
+          if git diff --name-only $DIFF_RANGE | grep -q '^backend/'; then
             BACKEND_CHANGED=true
           fi
 
