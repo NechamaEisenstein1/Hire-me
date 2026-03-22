@@ -1,13 +1,10 @@
 resource "aws_security_group" "rds" {
   name_prefix = "${var.project_name}-rds-"
   description = "Security group for RDS PostgreSQL access"
+  vpc_id      = var.vpc_id
 
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [] # Restrict via security group rules in your VPC module
-  }
+  # Ingress is intentionally omitted here; add aws_security_group_rule resources
+  # in your VPC/app module to allow specific sources (e.g. ECS task SG) on 5432.
 
   egress {
     from_port   = 0
@@ -45,10 +42,10 @@ resource "aws_db_instance" "postgres" {
   storage_type                    = "gp3"
   backup_retention_period         = var.environment == "prod" ? 30 : 7
   skip_final_snapshot             = var.environment == "prod" ? false : true
-  final_snapshot_identifier       = var.environment == "prod" ? "${var.project_name}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
+  final_snapshot_identifier       = var.environment == "prod" ? "${var.project_name}-postgres-${var.environment}-final" : null
   deletion_protection             = var.environment == "prod" ? true : false
-  enable_cloudwatch_logs_exports  = ["postgresql"]
-  enable_iam_database_authentication = true
+  enabled_cloudwatch_logs_exports     = ["postgresql"]
+  iam_database_authentication_enabled = true
   multi_az                        = var.environment == "prod" ? true : false
   copy_tags_to_snapshot           = true
 

@@ -65,7 +65,8 @@ resource "aws_s3_bucket_policy" "frontend" {
         Resource = "${aws_s3_bucket.frontend.arn}/*"
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
+            "AWS:SourceArn"     = aws_cloudfront_distribution.frontend.arn
+            "AWS:SourceAccount" = data.aws_caller_identity.current.account_id
           }
         }
       }
@@ -108,8 +109,6 @@ resource "aws_cloudfront_distribution" "frontend" {
   viewer_certificate {
     cloudfront_default_certificate = true
   }
-
-  depends_on = [aws_s3_bucket_policy.frontend]
 
   tags = local.tags
 }

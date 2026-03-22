@@ -21,6 +21,11 @@ variable "db_password" {
   }
 }
 
+variable "vpc_id" {
+  description = "VPC ID where the RDS security group will be created"
+  type        = string
+}
+
 variable "private_subnet_ids" {
   description = "Private subnet IDs for RDS"
   type        = list(string)
