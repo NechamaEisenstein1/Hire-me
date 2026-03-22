@@ -14,9 +14,11 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
 
-    @field_validator("question")
+    @field_validator("question", mode="before")
     @classmethod
-    def validate_question(cls, value: str) -> str:
+    def validate_question(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
         question = value.strip()
         if not question:
             raise ValueError("Question must not be empty.")

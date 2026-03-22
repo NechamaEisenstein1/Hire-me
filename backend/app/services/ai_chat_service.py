@@ -104,6 +104,9 @@ async def _request_groq_answer(
     except ValueError as exc:
         raise AIProviderResponseError("Groq returned invalid JSON.") from exc
 
+    if not isinstance(body, dict):
+        raise AIProviderResponseError("Groq returned an unexpected JSON structure.")
+
     choices = body.get("choices")
     if not isinstance(choices, list) or not choices:
         raise AIProviderResponseError("Groq returned no completion choices.")
@@ -141,6 +144,9 @@ async def _request_ollama_answer(
         body = response.json()
     except ValueError as exc:
         raise AIProviderResponseError("Ollama returned invalid JSON.") from exc
+
+    if not isinstance(body, dict):
+        raise AIProviderResponseError("Ollama returned an unexpected response format.")
 
     message = body.get("message")
     if not isinstance(message, dict):

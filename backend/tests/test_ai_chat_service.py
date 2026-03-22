@@ -119,3 +119,27 @@ def test_answer_interview_question_rejects_invalid_provider_payload() -> None:
                 await answer_interview_question("Hello", settings=settings, client=client)
 
     asyncio.run(run_test())
+
+
+def test_answer_interview_question_rejects_unexpected_groq_json_structure() -> None:
+    settings = build_settings(ai_provider="groq")
+
+    async def run_test() -> None:
+        transport = httpx.MockTransport(lambda _: httpx.Response(200, json=["bad-shape"]))
+        async with httpx.AsyncClient(transport=transport) as client:
+            with pytest.raises(AIProviderResponseError, match="unexpected JSON structure"):
+                await answer_interview_question("Hello", settings=settings, client=client)
+
+    asyncio.run(run_test())
+
+
+def test_answer_interview_question_rejects_unexpected_ollama_json_structure() -> None:
+    settings = build_settings()
+
+    async def run_test() -> None:
+        transport = httpx.MockTransport(lambda _: httpx.Response(200, json=["bad-shape"]))
+        async with httpx.AsyncClient(transport=transport) as client:
+            with pytest.raises(AIProviderResponseError, match="unexpected response format"):
+                await answer_interview_question("Hello", settings=settings, client=client)
+
+    asyncio.run(run_test())

@@ -62,3 +62,19 @@ def test_chat_route_returns_502_for_provider_response_errors() -> None:
 
     assert response.status_code == 502
     assert response.json()["detail"] == "Provider returned bad data."
+
+
+def test_chat_route_returns_200_and_chat_response_on_success() -> None:
+    client = create_client()
+    expected_answer = "This is a test answer."
+
+    with patch(
+        "app.api.rest.chat.answer_interview_question",
+        new=AsyncMock(return_value=expected_answer),
+    ):
+        response = client.post("/api/v1/chat/messages", json={"question": "Hello"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert isinstance(body, dict)
+    assert body.get("answer") == expected_answer
