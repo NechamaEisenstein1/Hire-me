@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
-    app_secret_key: str  # Required: must be set via APP_SECRET_KEY environment variable
+    app_secret_key: str = ""  # Required: must be set via APP_SECRET_KEY environment variable
     jwt_algorithm: str = "HS256"
     jwt_access_token_expires_minutes: int = 30
     jwt_refresh_token_expires_days: int = 30
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:4200"]
 
-    database_url: str  # Required: must be set via DATABASE_URL environment variable
+    database_url: str = ""  # Required: must be set via DATABASE_URL environment variable
 
     github_username: str = ""
     github_token: str = ""
