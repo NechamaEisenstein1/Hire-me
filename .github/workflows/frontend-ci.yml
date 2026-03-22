@@ -1,0 +1,70 @@
+name: Frontend CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      run_frontend: ${{ steps.detect.outputs.run_frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect frontend project
+        id: detect
+        shell: bash
+        run: |
+          FRONTEND_EXISTS=false
+          FRONTEND_CHANGED=false
+
+          if [ -f frontend/package.json ]; then
+            FRONTEND_EXISTS=true
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
+            CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+            if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              CHANGED_FILES=$(git ls-tree -r --name-only "$HEAD_SHA")
+            else
+              DIFF_RANGE="$BASE_SHA $HEAD_SHA"
+              CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+            fi
+          fi
+
+          if printf '%s\n' "$CHANGED_FILES" | grep -q '^frontend/'; then
+            FRONTEND_CHANGED=true
+          fi
+
+          if [ "$FRONTEND_EXISTS" = true ] && [ "$FRONTEND_CHANGED" = true ]; then
+            echo "run_frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_frontend=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping frontend build (frontend missing or no frontend file changes in this event)."
+          fi
+
+  build:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_frontend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+      - name: Build
+        working-directory: frontend
+        run: npm run build

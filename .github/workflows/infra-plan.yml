@@ -1,0 +1,74 @@
+name: Infra Plan
+
+# Preflight keeps branch-scoped PRs green when infra is absent.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      run_infra: ${{ steps.detect.outputs.run_infra }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect infra project
+        id: detect
+        shell: bash
+        run: |
+          INFRA_EXISTS=false
+          INFRA_CHANGED=false
+
+          if [ -d infra/terraform ] && find infra/terraform -name '*.tf' -print -quit | grep -q .; then
+            INFRA_EXISTS=true
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
+            CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+            if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              CHANGED_FILES=$(git ls-tree -r --name-only "$HEAD_SHA")
+            else
+              DIFF_RANGE="$BASE_SHA $HEAD_SHA"
+              CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+            fi
+          fi
+
+          if printf '%s\n' "$CHANGED_FILES" | grep -q '^infra/terraform/'; then
+            INFRA_CHANGED=true
+          fi
+
+          if [ "$INFRA_EXISTS" = true ] && [ "$INFRA_CHANGED" = true ]; then
+            echo "run_infra=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_infra=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping infra plan (infra missing or no infra file changes in this event)."
+          fi
+
+  plan:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_infra == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Fmt
+        working-directory: infra/terraform
+        run: terraform fmt -check
+      - name: Init
+        working-directory: infra/terraform
+        run: terraform init -input=false
+      - name: Validate
+        working-directory: infra/terraform
+        run: terraform validate
+      - name: Plan
+        working-directory: infra/terraform
+        run: terraform plan -input=false

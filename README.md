@@ -121,10 +121,18 @@ WebSocket:
 
 ## CI/CD Overview
 
-- backend-ci: lint, type-check, tests, security checks
-- frontend-ci: lint, unit tests, production build, Lighthouse budget checks
-- infra-plan: terraform validate/plan
-- deploy: build/push images and deploy to ECS + invalidate CloudFront
+- backend-ci: always reports a PR status; runs backend lint/type-check only when backend files are part of the change set.
+- frontend-ci: always reports a PR status; runs the frontend production build only when frontend files are part of the change set.
+- infra-plan: always reports a PR status; runs terraform fmt/init/validate/plan only when infra Terraform files are part of the change set.
+- deploy: manual stub workflow kept disabled until real deployment steps are implemented.
+
+### CI Behavior on Partial Branches
+
+- Some branches intentionally include only one area (for example frontend-only or infra-only changes).
+- Workflows still run on PRs and pushes so GitHub shows a status for each check.
+- In partial branches, unrelated jobs may appear as skipped by design after the preflight job runs.
+- Workflow guards check whether required project directories/files exist and whether that area actually changed before running backend, frontend, or infra jobs.
+- A skipped job in this scenario is expected behavior, not a failed pipeline.
 
 ## Milestone Build Order
 

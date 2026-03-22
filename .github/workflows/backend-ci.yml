@@ -1,0 +1,75 @@
+name: Backend CI
+
+# Preflight keeps branch-scoped PRs green when backend is absent.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      run_backend: ${{ steps.detect.outputs.run_backend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect backend project
+        id: detect
+        shell: bash
+        run: |
+          BACKEND_EXISTS=false
+          BACKEND_CHANGED=false
+
+          if [ -f backend/pyproject.toml ]; then
+            BACKEND_EXISTS=true
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
+            CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+            if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              CHANGED_FILES=$(git ls-tree -r --name-only "$HEAD_SHA")
+            else
+              DIFF_RANGE="$BASE_SHA $HEAD_SHA"
+              CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+            fi
+          fi
+
+          if printf '%s\n' "$CHANGED_FILES" | grep -q '^backend/'; then
+            BACKEND_CHANGED=true
+          fi
+
+          if [ "$BACKEND_EXISTS" = true ] && [ "$BACKEND_CHANGED" = true ]; then
+            echo "run_backend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_backend=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping backend lint/type-check (backend missing or no backend file changes in this event)."
+          fi
+
+  lint:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.run_backend == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Poetry
+        run: pip install poetry==1.8.5
+      - name: Install deps
+        working-directory: backend
+        run: poetry install --no-interaction --no-ansi
+      - name: Lint
+        working-directory: backend
+        run: poetry run ruff check app
+      - name: Type check
+        working-directory: backend
+        run: poetry run mypy app
