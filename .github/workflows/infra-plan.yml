@@ -7,8 +7,26 @@ on:
       - '.github/workflows/infra-plan.yml'
 
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      infra_exists: ${{ steps.detect.outputs.infra_exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect infra project
+        id: detect
+        shell: bash
+        run: |
+          if [ -d infra/terraform ] && ls infra/terraform/*.tf >/dev/null 2>&1; then
+            echo "infra_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "infra_exists=false" >> "$GITHUB_OUTPUT"
+            echo "Infra Terraform directory not found on this branch, skipping infra plan by design."
+          fi
+
   plan:
-    if: ${{ hashFiles('infra/terraform/*.tf') != '' }}
+    needs: preflight
+    if: ${{ needs.preflight.outputs.infra_exists == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
