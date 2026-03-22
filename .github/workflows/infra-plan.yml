@@ -3,10 +3,8 @@ name: Infra Plan
 # Preflight keeps branch-scoped PRs green when infra is absent.
 
 on:
+  push:
   pull_request:
-    paths:
-      - 'infra/terraform/**'
-      - '.github/workflows/infra-plan.yml'
 
 jobs:
   preflight:
@@ -24,7 +22,7 @@ jobs:
           INFRA_EXISTS=false
           INFRA_CHANGED=false
 
-          if [ -d infra/terraform ] && ls infra/terraform/*.tf >/dev/null 2>&1; then
+          if [ -d infra/terraform ] && find infra/terraform -name '*.tf' -print -quit | grep -q .; then
             INFRA_EXISTS=true
           fi
 
@@ -32,13 +30,19 @@ jobs:
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
             DIFF_RANGE="$BASE_SHA...$HEAD_SHA"
+            CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
           else
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
-            DIFF_RANGE="$BASE_SHA $HEAD_SHA"
+            if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+              CHANGED_FILES=$(git ls-tree -r --name-only "$HEAD_SHA")
+            else
+              DIFF_RANGE="$BASE_SHA $HEAD_SHA"
+              CHANGED_FILES=$(git diff --name-only $DIFF_RANGE)
+            fi
           fi
 
-          if git diff --name-only $DIFF_RANGE | grep -q '^infra/terraform/'; then
+          if printf '%s\n' "$CHANGED_FILES" | grep -q '^infra/terraform/'; then
             INFRA_CHANGED=true
           fi
 
