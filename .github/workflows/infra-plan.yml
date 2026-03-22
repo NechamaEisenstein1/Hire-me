@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'infra/terraform/**'
-      - 'ci/github/workflows/infra-plan.yml'
+      - '.github/workflows/infra-plan.yml'
 
 jobs:
   plan:
@@ -21,3 +21,5 @@ jobs:
         run: terraform init -input=false
       - name: Validate
         run: terraform validate
+      - name: Plan
+        run: terraform plan -input=false
