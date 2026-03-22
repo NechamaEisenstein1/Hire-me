@@ -126,6 +126,13 @@ WebSocket:
 - infra-plan: terraform validate/plan
 - deploy: build/push images and deploy to ECS + invalidate CloudFront
 
+### CI Behavior on Partial Branches
+
+- Some branches intentionally include only one area (for example frontend-only or infra-only changes).
+- In those cases, unrelated jobs may appear as skipped by design.
+- Workflow guards check whether required project directories/files exist before running backend or infra jobs.
+- A skipped job in this scenario is expected behavior, not a failed pipeline.
+
 ## Milestone Build Order
 
 1. Backend foundation (FastAPI app, config, database session, health check)
