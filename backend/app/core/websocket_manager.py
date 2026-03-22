@@ -22,9 +22,9 @@ class WebSocketManager:
             self.metrics["active_visitors"] = len(self.connections)
 
     async def broadcast(self, payload: dict[str, int | str]) -> None:
-                # Snapshot the connections to avoid RuntimeError: Set changed size during iteration
-                async with self._lock:
-                    connections_snapshot = list(self.connections)
+        # Snapshot the connections to avoid RuntimeError: Set changed size during iteration
+        async with self._lock:
+            connections_snapshot = list(self.connections)
 
         dead: list[WebSocket] = []
         for connection in connections_snapshot:

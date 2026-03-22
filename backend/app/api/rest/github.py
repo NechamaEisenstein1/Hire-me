@@ -31,7 +31,7 @@ async def github_stats() -> GitHubStats:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"GitHub API returned: {e.response.status_code}",
         )
-    except httpx.RequestError as e:
+    except httpx.RequestError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to reach GitHub API",
