@@ -1,0 +1,45 @@
+{
+  "basics": {
+    "name": "Your Full Name",
+    "title": "Senior Full Stack Engineer",
+    "location": "Tel Aviv, Israel",
+    "email": "you@example.com",
+    "summary": "Product-minded engineer focused on building scalable platforms with strong UX and measurable impact."
+  },
+  "skills": [
+    "Angular",
+    "TypeScript",
+    "Python",
+    "FastAPI",
+    "PostgreSQL",
+    "Docker",
+    "AWS"
+  ],
+  "experience": [
+    {
+      "role": "Lead Full Stack Engineer",
+      "company": "Acme Tech",
+      "start": "2023",
+      "end": "Present",
+      "highlights": [
+        "Built a portfolio platform with realtime analytics and AI-assisted interview flows.",
+        "Reduced deployment cycle time by 40% via CI/CD and infrastructure automation."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Hire Me Platform",
+      "summary": "Interactive resume app with 3D visuals, chatbot, and websocket metrics.",
+      "stack": ["Angular", "FastAPI", "PostgreSQL", "AWS"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "school": "Technion",
+      "start": "2017",
+      "end": "2021"
+    }
+  ]
+}

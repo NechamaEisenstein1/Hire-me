@@ -12,6 +12,7 @@ export class AppShellStore {
 
   readonly navLinks: ReadonlyArray<NavLink> = [
     { path: '/', label: 'Home' },
+    { path: '/resume-studio', label: 'Resume Studio' },
     { path: '/resume-3d', label: '3D Resume' },
     { path: '/interview-me', label: 'Interview Me' }
   ];
