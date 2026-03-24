@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 
+import { parseResumeFile } from '../../features/resume-studio/resume-parser';
 import { ApiService } from './api.service';
 
 type ChatResponse = {
@@ -20,7 +21,8 @@ export class ChatbotService {
   constructor(private readonly api: ApiService) {}
 
   async ask(question: string): Promise<string> {
-    let scopedQuestion = this.buildGuardedQuestion(question);
+    const normalizedQuestion = question.trim();
+    let scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
 
     try {
       const profile = await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
@@ -40,10 +42,15 @@ export class ChatbotService {
       // If profile context is unavailable, continue with strict guardrails only.
     }
 
-    const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
-      question: scopedQuestion
-    });
-    return response.answer;
+    try {
+      const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
+        question: scopedQuestion
+      });
+      return response.answer;
+    } catch {
+      const fallbackProfile = await this.loadFallbackProfile();
+      return this.buildLocalFallbackAnswer(normalizedQuestion, fallbackProfile);
+    }
   }
 
   private buildGuardedQuestion(question: string): string {
@@ -54,5 +61,76 @@ export class ChatbotService {
       '',
       `Recruiter question: ${question.trim()}`
     ].join('\n');
+  }
+
+  private async loadFallbackProfile(): Promise<ResumeProfileContext | null> {
+    try {
+      return await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
+    } catch {
+      // Continue to bundled CV fallback.
+    }
+
+    try {
+      const response = await fetch('/public/my-resume.pdf');
+      if (!response.ok) {
+        return null;
+      }
+
+      const blob = await response.blob();
+      const file = new File([blob], 'my-resume.pdf', {
+        type: blob.type || 'application/pdf'
+      });
+
+      const parsed = await parseResumeFile(file);
+      return {
+        name: parsed.name,
+        title: parsed.title,
+        summary: parsed.summary,
+        skills: parsed.skills,
+        education: parsed.education,
+        projects: parsed.projects
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private buildLocalFallbackAnswer(question: string, profile: ResumeProfileContext | null): string {
+    if (!profile) {
+      return 'The AI provider is temporarily unavailable, and no resume profile could be loaded right now. Please try again in a moment.';
+    }
+
+    const q = question.toLowerCase();
+
+    if (q.includes('skill') || q.includes('technology') || q.includes('tech stack')) {
+      const topSkills = profile.skills.slice(0, 8).join(', ');
+      return `Based on the current CV profile, key skills include: ${topSkills || 'not specified yet'}.`;
+    }
+
+    if (q.includes('project') || q.includes('architecture') || q.includes('system')) {
+      const project = profile.projects[0];
+      if (project) {
+        return `A highlighted project is ${project.name}: ${project.summary || 'summary not provided in the profile yet.'}`;
+      }
+      return 'The CV profile currently does not include project details.';
+    }
+
+    if (q.includes('education') || q.includes('degree') || q.includes('university')) {
+      const firstEducation = profile.education[0];
+      if (firstEducation) {
+        return `Education includes ${firstEducation.degree} at ${firstEducation.school}.`;
+      }
+      return 'The CV profile currently does not include education details.';
+    }
+
+    return [
+      'The external AI provider is temporarily unavailable, so this is a CV-based fallback response.',
+      `Candidate: ${profile.name} - ${profile.title}.`,
+      `Summary: ${profile.summary || 'Not provided.'}`,
+      profile.skills.length > 0 ? `Top skills: ${profile.skills.slice(0, 6).join(', ')}.` : 'Top skills: Not provided.',
+      profile.projects.length > 0
+        ? `Featured project: ${profile.projects[0].name}${profile.projects[0].summary ? ` - ${profile.projects[0].summary}` : ''}.`
+        : 'Featured project: Not provided.'
+    ].join(' ');
   }
 }
