@@ -3,7 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { ParsedResume } from './resume-parser';
+import { ParsedResume, parseResumeFile } from './resume-parser';
 
 @Component({
   standalone: true,
@@ -21,7 +21,7 @@ import { ParsedResume } from './resume-parser';
           </div>
           <div class="flex flex-wrap gap-2">
             <a
-              href="/public/my-resume.txt"
+              href="/public/my-resume.pdf"
               download
               (click)="trackResumeDownload()"
               class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700"
@@ -187,6 +187,21 @@ export class ResumeStudioPage implements OnInit {
       const profile = await this.api.get<ParsedResume>('/api/v1/resume-profile');
       this.resume.set(profile);
       this.statusMessage.set('Loaded public resume profile for recruiter view.');
+      return;
+    } catch {
+      // Fall back to the bundled default PDF resume.
+    }
+
+    try {
+      const response = await fetch('/public/my-resume.pdf');
+      if (!response.ok) {
+        throw new Error('Default resume PDF is missing.');
+      }
+      const blob = await response.blob();
+      const file = new File([blob], 'my-resume.pdf', { type: blob.type || 'application/pdf' });
+      const parsed = await parseResumeFile(file);
+      this.resume.set(parsed);
+      this.statusMessage.set('Loaded default resume from bundled PDF.');
     } catch {
       this.statusMessage.set('Unable to load public resume profile right now.');
     }

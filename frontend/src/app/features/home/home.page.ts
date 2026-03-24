@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { parseResumeFile } from '../resume-studio/resume-parser';
 
 type ResumePreview = {
   name: string;
@@ -33,7 +34,7 @@ type ResumePreview = {
           <p class="m-0 mt-5 max-w-3xl text-base leading-7 opacity-90 md:text-lg">{{ model.summary }}</p>
 
           <div class="mt-6 flex flex-wrap gap-3">
-            <a href="/public/my-resume.txt" download (click)="trackResumeDownload()" class="rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white no-underline hover:bg-brand-800">
+            <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white no-underline hover:bg-brand-800">
               Download CV
             </a>
             <a routerLink="/interview-me" class="rounded-xl border border-brand-400 px-5 py-3 text-sm font-semibold no-underline hover:bg-brand-100 dark:hover:bg-brand-800/60">
@@ -99,6 +100,21 @@ export class HomePage implements OnInit {
     try {
       const profile = await this.api.get<ResumePreview>('/api/v1/resume-profile');
       this.resume.set(profile);
+      this.statusMessage.set('');
+      return;
+    } catch {
+      // Fall back to the bundled default PDF resume.
+    }
+
+    try {
+      const response = await fetch('/public/my-resume.pdf');
+      if (!response.ok) {
+        throw new Error('Default resume PDF is missing.');
+      }
+      const blob = await response.blob();
+      const file = new File([blob], 'my-resume.pdf', { type: blob.type || 'application/pdf' });
+      const parsed = await parseResumeFile(file);
+      this.resume.set(parsed);
       this.statusMessage.set('');
     } catch {
       this.statusMessage.set('Resume is temporarily unavailable.');
