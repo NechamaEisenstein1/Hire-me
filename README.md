@@ -4,10 +4,10 @@ A production-grade portfolio and interactive resume platform that demonstrates f
 
 ## Workspace Roles (Important)
 
-- This repository is the backend and infrastructure workspace root.
-- Frontend source-of-truth is now this repository folder: c:\projects\hire-me\frontend.
-- Use this single frontend folder for all Angular code changes.
-- The sibling repository c:\projects\hire-me-frontend no longer contains a separate frontend folder.
+- This repository is the fullstack workspace root.
+- Frontend source-of-truth is the frontend/ directory in this repository.
+- Use this single frontend/ directory for all Angular code changes.
+- Any previous standalone frontend repository is deprecated and should not be used for new changes.
 
 ## Stack
 
