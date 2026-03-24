@@ -1,7 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 
-import { ParsedResume, parseResumeContent } from './resume-parser';
+import { ParsedResume, parseResumeFile } from './resume-parser';
 
 @Component({
   standalone: true,
@@ -48,10 +48,10 @@ import { ParsedResume, parseResumeContent } from './resume-parser';
       <div class="grid gap-6 lg:grid-cols-[1.1fr_2fr]">
         <aside class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/40">
           <h3 class="m-0 text-lg font-semibold">Upload Resume File</h3>
-          <p class="m-0 mt-2 text-sm opacity-80">Supported: .json, .txt, .md</p>
+          <p class="m-0 mt-2 text-sm opacity-80">Supported: .json, .txt, .md, .pdf, .docx</p>
 
           <label class="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-brand-300 p-5 text-center transition hover:border-brand-500 dark:border-brand-700 dark:hover:border-brand-500">
-            <input type="file" class="hidden" accept=".json,.txt,.md" (change)="onFileSelected($event)" />
+            <input type="file" class="hidden" accept=".json,.txt,.md,.pdf,.docx" (change)="onFileSelected($event)" />
             <span class="text-sm font-medium">Click to choose resume file</span>
           </label>
 
@@ -186,12 +186,12 @@ export class ResumeStudioPage {
     }
 
     try {
-      const content = await file.text();
-      const parsed = parseResumeContent(file.name, content);
+      const parsed = await parseResumeFile(file);
       this.resume.set(parsed);
       this.statusMessage.set(`Loaded ${file.name} successfully.`);
-    } catch {
-      this.statusMessage.set('Could not parse this file. Try the JSON template format.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Could not parse this file.';
+      this.statusMessage.set(message);
     }
   }
 

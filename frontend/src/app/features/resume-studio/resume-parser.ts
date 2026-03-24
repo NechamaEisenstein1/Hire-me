@@ -1,3 +1,5 @@
+import JSZip from 'jszip';
+
 export type ResumeExperience = {
   role: string;
   company: string;
@@ -28,6 +30,9 @@ export type ParsedResume = {
   projects: ResumeProject[];
   education: ResumeEducation[];
 };
+
+const SUPPORTED_EXTENSIONS = ['json', 'txt', 'md', 'pdf', 'docx'] as const;
+type SupportedExtension = (typeof SUPPORTED_EXTENSIONS)[number];
 
 type JsonInput = {
   basics?: {
@@ -60,11 +65,80 @@ type JsonInput = {
   }>;
 };
 
-export function parseResumeContent(fileName: string, content: string): ParsedResume {
-  if (fileName.toLowerCase().endsWith('.json')) {
-    return parseJsonResume(content);
+export async function parseResumeFile(file: File): Promise<ParsedResume> {
+  const extension = getFileExtension(file.name);
+
+  if (!extension || !SUPPORTED_EXTENSIONS.includes(extension)) {
+    throw new Error('Unsupported file type. Use JSON, TXT, MD, PDF, or DOCX.');
   }
-  return parseTextResume(content);
+
+  if (extension === 'json') {
+    return parseJsonResume(await file.text());
+  }
+
+  if (extension === 'pdf') {
+    const extractedText = await extractTextFromPdf(file);
+    return parseTextResume(extractedText);
+  }
+
+  if (extension === 'docx') {
+    const extractedText = await extractTextFromDocx(file);
+    return parseTextResume(extractedText);
+  }
+
+  return parseTextResume(await file.text());
+}
+
+async function extractTextFromPdf(file: File): Promise<string> {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs';
+  const arrayBuffer = await file.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const loadingTask = pdfjs.getDocument({ data: uint8Array });
+  const documentProxy = await loadingTask.promise;
+  const pagesText: string[] = [];
+
+  for (let pageIndex = 1; pageIndex <= documentProxy.numPages; pageIndex += 1) {
+    const page = await documentProxy.getPage(pageIndex);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (pageText.length > 0) {
+      pagesText.push(pageText);
+    }
+  }
+
+  return pagesText.join('\n');
+}
+
+async function extractTextFromDocx(file: File): Promise<string> {
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const documentXmlFile = zip.file('word/document.xml');
+  if (!documentXmlFile) {
+    throw new Error('Invalid DOCX file: word/document.xml is missing.');
+  }
+
+  const xml = await documentXmlFile.async('string');
+  return xml
+    .replace(/<w:p[^>]*>/g, '\n')
+    .replace(/<w:tab\/>/g, ' ')
+    .replace(/<w:br\/>/g, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\n\s+/g, '\n')
+    .trim();
+}
+
+function getFileExtension(fileName: string): SupportedExtension | null {
+  const dotIndex = fileName.lastIndexOf('.');
+  if (dotIndex < 0 || dotIndex === fileName.length - 1) {
+    return null;
+  }
+  return fileName.slice(dotIndex + 1).toLowerCase() as SupportedExtension;
 }
 
 function parseJsonResume(content: string): ParsedResume {
