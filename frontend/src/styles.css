@@ -18,6 +18,15 @@ body {
   color: #1e2a12;
 }
 
+.mat-toolbar {
+  --mat-toolbar-container-background-color: transparent;
+}
+
+.mdc-list-item--activated {
+  background: rgba(111, 155, 61, 0.15);
+  border-radius: 0.75rem;
+}
+
 .dark body {
   color-scheme: dark;
   background: radial-gradient(circle at 15% 20%, #1c2714 0%, #182111 35%, #10180b 100%);
