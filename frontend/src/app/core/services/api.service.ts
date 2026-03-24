@@ -42,7 +42,10 @@ export class ApiService {
     try {
       return await fetch(input, { ...init, signal: controller.signal });
     } catch (error: unknown) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (
+        controller.signal.aborted ||
+        (error instanceof DOMException && error.name === 'AbortError')
+      ) {
         throw new ApiError(
           504,
           'The request took too long and timed out. Please try again.'

@@ -27,6 +27,10 @@ export class InterviewMePage {
   constructor(private readonly chatbot: ChatbotService) {}
 
   async ask(): Promise<void> {
+    if (this.isLoading()) {
+      return;
+    }
+
     if (!this.question.trim()) {
       return;
     }
