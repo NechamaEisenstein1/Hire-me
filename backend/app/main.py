@@ -7,6 +7,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import Response
 
 from app.api.graphql.schema import graphql_router
+from app.api.rest.analytics import router as analytics_router
 from app.api.rest.auth import router as auth_router
 from app.api.rest.chat import router as chat_router
 from app.api.rest.github import router as github_router
@@ -45,6 +46,7 @@ rate_limit_handler = cast(
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 app.include_router(health_router)
+app.include_router(analytics_router)
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(resume_profile_router)

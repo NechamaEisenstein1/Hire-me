@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     ai_request_timeout_seconds: float = 30.0
     resume_owner_token: str = ""
     resume_profile_path: str = "app/data/resume_profile.json"
+    analytics_stats_path: str = "app/data/site_analytics.json"
     ai_system_prompt: str = (
         "You are the AI assistant for a personal software-engineering CV website. "
         "Answer only about the candidate's skills, education, architecture decisions, delivery practices, and project implementation details "
