@@ -42,7 +42,7 @@ class UsersRepository:
         """List all users with pagination."""
         query = select(User).offset(skip).limit(limit)
         result = await self.session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     async def update_user(self, user_id: int, **kwargs) -> User | None:
         """Update user fields."""
@@ -64,6 +64,6 @@ class UsersRepository:
         if not user:
             return False
 
-        self.session.delete(user)
+        await self.session.delete(user)
         await self.session.commit()
         return True

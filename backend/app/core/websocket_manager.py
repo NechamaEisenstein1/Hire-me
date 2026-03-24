@@ -7,7 +7,7 @@ from fastapi import WebSocket
 class WebSocketManager:
     def __init__(self) -> None:
         self.connections: set[WebSocket] = set()
-        self.metrics = defaultdict(int)
+        self.metrics: defaultdict[str, int] = defaultdict(int)
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket) -> None:
@@ -22,9 +22,9 @@ class WebSocketManager:
             self.metrics["active_visitors"] = len(self.connections)
 
     async def broadcast(self, payload: dict[str, int | str]) -> None:
-                # Snapshot the connections to avoid RuntimeError: Set changed size during iteration
-                async with self._lock:
-                    connections_snapshot = list(self.connections)
+        # Snapshot the connections to avoid RuntimeError: Set changed size during iteration
+        async with self._lock:
+            connections_snapshot = list(self.connections)
 
         dead: list[WebSocket] = []
         for connection in connections_snapshot:

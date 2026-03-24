@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from typing import Callable, cast
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.responses import Response
 
 from app.api.graphql.schema import graphql_router
 from app.api.rest.auth import router as auth_router
@@ -34,7 +37,11 @@ app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
 # Register rate limit exceeded exception handler
-app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+rate_limit_handler = cast(
+    Callable[[Request, Exception], Response],
+    rate_limit_exceeded_handler,
+)
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 app.include_router(health_router)
 app.include_router(auth_router)

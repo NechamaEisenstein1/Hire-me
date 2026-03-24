@@ -1,4 +1,7 @@
+from typing import cast
+
 from fastapi import APIRouter, Depends
+from pydantic import HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.repositories.projects_repo import ProjectsRepository
@@ -17,8 +20,8 @@ async def list_projects(session: AsyncSession = Depends(get_db_session)) -> list
             slug=project.slug,
             title=project.title,
             summary=project.summary,
-            repo_url=project.repo_url,
-            live_url=project.live_url,
+            repo_url=cast(HttpUrl, project.repo_url),
+            live_url=cast(HttpUrl | None, project.live_url),
             featured=project.featured,
             created_at=project.created_at,
         )

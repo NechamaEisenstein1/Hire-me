@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
-    app_secret_key: str  # Required: must be set via APP_SECRET_KEY environment variable
+    app_secret_key: str = ""  # Required: must be set via APP_SECRET_KEY environment variable
     jwt_algorithm: str = "HS256"
     jwt_access_token_expires_minutes: int = 30
     jwt_refresh_token_expires_days: int = 30
@@ -21,15 +21,23 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:4200"]
 
-    database_url: str  # Required: must be set via DATABASE_URL environment variable
+    database_url: str = ""  # Required: must be set via DATABASE_URL environment variable
 
     github_username: str = ""
     github_token: str = ""
 
     ai_provider: str = "ollama"
+    groq_base_url: str = "https://api.groq.com"
     groq_api_key: str = ""
+    groq_model: str = "llama-3.1-8b-instant"
     ollama_base_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
+    ai_request_timeout_seconds: float = 30.0
+    ai_system_prompt: str = (
+        "You are the AI assistant for a software engineer's portfolio site. "
+        "Answer clearly and honestly about experience, architecture, delivery, and tradeoffs. "
+        "If the portfolio content does not provide enough information, say that instead of inventing details."
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -37,6 +45,22 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @field_validator("ai_provider", mode="before")
+    @classmethod
+    def validate_ai_provider(cls, value: str | None) -> str:
+        provider = (value or "ollama").strip().lower()
+        if provider not in {"groq", "ollama"}:
+            raise ValueError("AI_PROVIDER must be set to 'groq' or 'ollama'.")
+        return provider
+
+    @field_validator("ai_request_timeout_seconds", mode="before")
+    @classmethod
+    def validate_ai_timeout(cls, value: float | str) -> float:
+        timeout = float(value)
+        if timeout <= 0:
+            raise ValueError("AI_REQUEST_TIMEOUT_SECONDS must be greater than 0.")
+        return timeout
 
     @field_validator("app_secret_key", mode="before")
     @classmethod
