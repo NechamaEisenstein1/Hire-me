@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { VisitorCounterWidget } from '../visitor-counter/visitor-counter.widget';
 
 @Component({
@@ -22,7 +23,7 @@ import { VisitorCounterWidget } from '../visitor-counter/visitor-counter.widget'
           <a routerLink="/resume-studio" class="rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white no-underline hover:bg-brand-800">
             Open Resume Studio
           </a>
-          <a href="/public/my-resume.txt" download class="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700">
+          <a href="/public/my-resume.txt" download (click)="trackResumeDownload()" class="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700">
             Download My Resume
           </a>
           <a href="/public/resume-template.json" download class="rounded-xl border border-brand-400 px-5 py-3 text-sm font-semibold no-underline hover:bg-brand-100 dark:hover:bg-brand-800/60">
@@ -56,4 +57,12 @@ import { VisitorCounterWidget } from '../visitor-counter/visitor-counter.widget'
     </section>
   `
 })
-export class HomePage {}
+export class HomePage {
+  private readonly analytics = inject(AnalyticsService);
+
+  trackResumeDownload(): void {
+    this.analytics.trackResumeDownload().catch(() => {
+      // Ignore analytics tracking failures for recruiter UX.
+    });
+  }
+}

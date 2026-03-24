@@ -16,6 +16,8 @@ A production-grade portfolio and interactive resume platform that demonstrates f
   - `POST /api/v1/resume-profile/verify`
   - `PUT /api/v1/resume-profile`
 - Configure `RESUME_OWNER_TOKEN` to enable secure resume publishing.
+- Private owner panel route: `/owner-admin` (not linked in public navigation).
+- Daily owner metrics endpoint: `GET /api/v1/analytics/admin/today` with `X-Resume-Owner-Token`.
 
 ## Stack
 

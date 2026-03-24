@@ -6,6 +6,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
+import { AnalyticsService } from './core/services/analytics.service';
 import { AppShellStore } from './core/stores/app-shell.store';
 
 @Component({
@@ -66,4 +67,11 @@ import { AppShellStore } from './core/stores/app-shell.store';
 })
 export class AppComponent {
   protected readonly shellStore = inject(AppShellStore);
+  private readonly analytics = inject(AnalyticsService);
+
+  constructor() {
+    this.analytics.trackVisit().catch(() => {
+      // Ignore analytics failures in UI bootstrap.
+    });
+  }
 }

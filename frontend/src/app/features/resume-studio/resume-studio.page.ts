@@ -1,117 +1,51 @@
 ﻿import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 
-import { ApiError, ApiService } from '../../core/services/api.service';
-import { ParsedResume, parseResumeFile } from './resume-parser';
+import { ApiService } from '../../core/services/api.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { ParsedResume } from './resume-parser';
 
 @Component({
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe],
   template: `
     <section class="grid gap-6">
       <div class="rounded-3xl border border-brand-200/70 bg-white/80 p-6 shadow-lg backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/45 md:p-8">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p class="m-0 text-xs uppercase tracking-[0.18em] opacity-70">Resume Studio</p>
-            <h2 class="m-0 mt-2 text-3xl font-bold tracking-tight md:text-4xl">Turn your resume into a premium visual profile</h2>
+            <h2 class="m-0 mt-2 text-3xl font-bold tracking-tight md:text-4xl">Professional CV Overview</h2>
             <p class="m-0 mt-3 max-w-2xl text-sm leading-6 opacity-80 md:text-base">
-              Recruiters see this polished CV view by default. Resume updates are owner-only
-              and can be published with your secure owner token.
+              This is the public recruiter view. It is curated and updated through a private owner admin panel.
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
             <a
               href="/public/my-resume.txt"
               download
+              (click)="trackResumeDownload()"
               class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700"
             >
               Download My Resume
             </a>
-            <a
-              href="/public/resume-template.json"
-              download
-              class="rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-brand-800"
-            >
-              Download Resume Template
-            </a>
-            <button
-              type="button"
-              (click)="downloadParsedResume()"
-              [disabled]="!resume()"
-              class="rounded-xl border border-brand-400 px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 hover:bg-brand-100 dark:hover:bg-brand-800/60"
-            >
-              Download Parsed Resume
-            </button>
           </div>
         </div>
       </div>
 
       <div class="grid gap-6 lg:grid-cols-[1fr_2fr]">
         <aside class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/40 lg:sticky lg:top-24 lg:self-start">
-          <h3 class="m-0 text-lg font-semibold">Owner Controls</h3>
-          <p class="m-0 mt-2 text-sm opacity-80">Only you can update the public resume profile.</p>
+          <h3 class="m-0 text-lg font-semibold">Candidate Snapshot</h3>
+          <p class="m-0 mt-2 text-sm opacity-80">A concise summary of core qualifications.</p>
 
-          <div class="mt-4 grid gap-2">
-            <input
-              [ngModel]="ownerTokenInput()"
-              (ngModelChange)="ownerTokenInput.set($event)"
-              type="password"
-              placeholder="Owner token"
-              class="w-full rounded-lg border border-brand-300 bg-white p-2 text-sm dark:border-brand-700 dark:bg-brand-950/60"
-            />
-            <button
-              type="button"
-              (click)="unlockOwnerMode()"
-              [disabled]="isVerifyingOwner() || !ownerTokenInput().trim()"
-              class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {{ isVerifyingOwner() ? 'Verifying...' : ownerUnlocked() ? 'Owner Unlocked' : 'Unlock Owner Mode' }}
-            </button>
-          </div>
-
-          @if (ownerUnlocked()) {
-            <div class="mt-4 rounded-xl border border-brand-300/70 bg-brand-50/60 p-4 dark:border-brand-700 dark:bg-brand-900/45">
-              <p class="m-0 text-sm font-semibold">Upload Resume File</p>
-              <p class="m-0 mt-1 text-xs opacity-80">Supported: .json, .txt, .md, .pdf, .docx</p>
-
-              <label
-                class="mt-3 block cursor-pointer rounded-xl border-2 border-dashed border-brand-300 p-4 text-center transition hover:border-brand-500 dark:border-brand-700 dark:hover:border-brand-500"
-                (dragover)="onDragOver($event)"
-                (drop)="onDrop($event)"
-              >
-                <input type="file" class="hidden" accept=".json,.txt,.md,.pdf,.docx" (change)="onFileSelected($event)" />
-                <span class="text-xs font-medium">Click or drag file here</span>
-              </label>
-
-              <button
-                type="button"
-                (click)="publishResume()"
-                [disabled]="isPublishing() || !resume()"
-                class="mt-3 w-full rounded-lg border border-brand-500 px-3 py-2 text-sm font-semibold hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-brand-800/60"
-              >
-                {{ isPublishing() ? 'Publishing...' : 'Publish Resume To Site' }}
-              </button>
-            </div>
-          } @else {
-            <p class="mt-4 rounded-lg bg-brand-100/80 px-3 py-2 text-sm dark:bg-brand-800/50">
-              Recruiter mode is active. Resume editing is locked.
-            </p>
-          }
-
-          <p class="mt-4 rounded-lg bg-brand-100/80 px-3 py-2 text-sm dark:bg-brand-800/50" [class.animate-pulse]="isParsing()">
+          <p class="mt-4 rounded-lg bg-brand-100/80 px-3 py-2 text-sm dark:bg-brand-800/50">
             {{ statusMessage() }}
           </p>
 
           @if (resume()) {
             <div class="mt-4 rounded-xl border border-brand-200 p-3 dark:border-brand-700">
-              <p class="m-0 text-xs uppercase tracking-[0.12em] opacity-70">Extraction Quality</p>
-              <p class="m-0 mt-2 text-sm font-semibold" [class.text-amber-700]="missingSections().length > 0" [class.dark:text-amber-300]="missingSections().length > 0">
-                {{ missingSections().length === 0 ? 'Great: all major sections detected' : 'Partial: some sections are missing' }}
-              </p>
-              @if (missingSections().length > 0) {
-                <p class="m-0 mt-2 text-xs opacity-80">Missing: {{ missingSections().join(', ') }}</p>
-              }
+              <p class="m-0 text-xs uppercase tracking-[0.12em] opacity-70">Current Role</p>
+              <p class="m-0 mt-2 text-sm font-semibold">{{ resume()?.title }}</p>
+              <p class="m-0 mt-1 text-xs opacity-80">{{ resume()?.location }}</p>
             </div>
           }
 
@@ -209,8 +143,8 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
             </section>
           } @else {
             <section class="rounded-2xl border border-dashed border-brand-300 bg-white/70 p-10 text-center dark:border-brand-700 dark:bg-brand-900/35">
-              <p class="m-0 text-lg font-semibold">No resume loaded yet</p>
-              <p class="m-0 mt-2 text-sm opacity-80">Upload your resume file to generate a visual profile.</p>
+              <p class="m-0 text-lg font-semibold">Resume profile is temporarily unavailable</p>
+              <p class="m-0 mt-2 text-sm opacity-80">Please try again shortly or contact the site owner.</p>
             </section>
           }
         </article>
@@ -222,15 +156,10 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
 })
 export class ResumeStudioPage implements OnInit {
   private readonly api = inject(ApiService);
-  private static readonly ownerTokenStorageKey = 'resume-owner-token';
+  private readonly analytics = inject(AnalyticsService);
 
   readonly now = new Date();
   readonly resume = signal<ParsedResume | null>(null);
-  readonly isParsing = signal(false);
-  readonly isPublishing = signal(false);
-  readonly ownerUnlocked = signal(false);
-  readonly isVerifyingOwner = signal(false);
-  readonly ownerTokenInput = signal('');
   readonly statusMessage = signal('Loading public resume profile...');
 
   readonly stats = computed(() => {
@@ -243,134 +172,14 @@ export class ResumeStudioPage implements OnInit {
     };
   });
 
-  readonly missingSections = computed(() => {
-    const model = this.resume();
-    if (!model) {
-      return [] as string[];
-    }
-
-    const missing: string[] = [];
-    if (model.summary.length < 30) {
-      missing.push('Summary');
-    }
-    if (model.skills.length === 0) {
-      missing.push('Skills');
-    }
-    if (model.experience.length === 0) {
-      missing.push('Experience');
-    }
-    if (model.education.length === 0) {
-      missing.push('Education');
-    }
-    return missing;
-  });
-
   async ngOnInit(): Promise<void> {
     await this.loadPublicResumeProfile();
-
-    const savedToken = globalThis.localStorage.getItem(ResumeStudioPage.ownerTokenStorageKey);
-    if (savedToken) {
-      this.ownerTokenInput.set(savedToken);
-      await this.unlockOwnerMode();
-    }
   }
 
-  async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) {
-      return;
-    }
-    await this.processResumeFile(file);
-  }
-
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-  }
-
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    const file = event.dataTransfer?.files?.[0];
-    if (!file) {
-      return;
-    }
-    await this.processResumeFile(file);
-  }
-
-  async unlockOwnerMode(): Promise<void> {
-    const token = this.ownerTokenInput().trim();
-    if (!token) {
-      return;
-    }
-
-    this.isVerifyingOwner.set(true);
-    try {
-      await this.api.post<{ valid: boolean }>('/api/v1/resume-profile/verify', {}, {
-        headers: { 'X-Resume-Owner-Token': token }
-      });
-      this.ownerUnlocked.set(true);
-      globalThis.localStorage.setItem(ResumeStudioPage.ownerTokenStorageKey, token);
-      this.statusMessage.set('Owner mode unlocked. You can upload and publish resume updates.');
-    } catch (error: unknown) {
-      this.ownerUnlocked.set(false);
-      const message = error instanceof ApiError ? error.message : 'Owner verification failed.';
-      this.statusMessage.set(message);
-    } finally {
-      this.isVerifyingOwner.set(false);
-    }
-  }
-
-  async publishResume(): Promise<void> {
-    const profile = this.resume();
-    const token = this.ownerTokenInput().trim();
-    if (!profile || !token) {
-      return;
-    }
-
-    this.isPublishing.set(true);
-    try {
-      const updated = await this.api.put<ParsedResume>('/api/v1/resume-profile', { profile }, {
-        headers: { 'X-Resume-Owner-Token': token }
-      });
-      this.resume.set(updated);
-      this.statusMessage.set('Resume published successfully. Recruiters now see the updated profile.');
-    } catch (error: unknown) {
-      const message = error instanceof ApiError ? error.message : 'Could not publish resume.';
-      this.statusMessage.set(message);
-    } finally {
-      this.isPublishing.set(false);
-    }
-  }
-
-  downloadParsedResume(): void {
-    const model = this.resume();
-    if (!model) {
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(model, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'resume-visual-data.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  private async processResumeFile(file: File): Promise<void> {
-    this.isParsing.set(true);
-    this.statusMessage.set(`Parsing ${file.name}...`);
-
-    try {
-      const parsed = await parseResumeFile(file);
-      this.resume.set(parsed);
-      this.statusMessage.set(`Loaded ${file.name} successfully. Review then click Publish.`);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Could not parse this file.';
-      this.statusMessage.set(message);
-    } finally {
-      this.isParsing.set(false);
-    }
+  trackResumeDownload(): void {
+    this.analytics.trackResumeDownload().catch(() => {
+      // Ignore analytics failures for recruiter UX.
+    });
   }
 
   private async loadPublicResumeProfile(): Promise<void> {
