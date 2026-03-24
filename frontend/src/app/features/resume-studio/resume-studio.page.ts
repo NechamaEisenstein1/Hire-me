@@ -12,10 +12,10 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p class="m-0 text-xs uppercase tracking-[0.18em] opacity-70">Resume Studio</p>
-            <h2 class="m-0 mt-2 text-3xl font-bold tracking-tight md:text-4xl">Make your CV visual and interactive</h2>
+            <h2 class="m-0 mt-2 text-3xl font-bold tracking-tight md:text-4xl">Turn your resume into a premium visual profile</h2>
             <p class="m-0 mt-3 max-w-2xl text-sm leading-6 opacity-80 md:text-base">
-              Upload JSON/TXT/MD resume data and instantly generate a polished visual profile.
-              You can also download the current resume template and update it with your details.
+              Upload JSON/TXT/MD/PDF/DOCX and get a cleaner extraction with smarter section detection.
+              Review quality indicators, then download structured resume data.
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -45,19 +45,35 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
         </div>
       </div>
 
-      <div class="grid gap-6 lg:grid-cols-[1.1fr_2fr]">
-        <aside class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/40">
+      <div class="grid gap-6 lg:grid-cols-[1fr_2fr]">
+        <aside class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/40 lg:sticky lg:top-24 lg:self-start">
           <h3 class="m-0 text-lg font-semibold">Upload Resume File</h3>
           <p class="m-0 mt-2 text-sm opacity-80">Supported: .json, .txt, .md, .pdf, .docx</p>
 
-          <label class="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-brand-300 p-5 text-center transition hover:border-brand-500 dark:border-brand-700 dark:hover:border-brand-500">
+          <label
+            class="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-brand-300 p-5 text-center transition hover:border-brand-500 dark:border-brand-700 dark:hover:border-brand-500"
+            (dragover)="onDragOver($event)"
+            (drop)="onDrop($event)"
+          >
             <input type="file" class="hidden" accept=".json,.txt,.md,.pdf,.docx" (change)="onFileSelected($event)" />
-            <span class="text-sm font-medium">Click to choose resume file</span>
+            <span class="text-sm font-medium">Click or drag file here</span>
           </label>
 
-          <p class="mt-4 rounded-lg bg-brand-100/80 px-3 py-2 text-sm dark:bg-brand-800/50">
+          <p class="mt-4 rounded-lg bg-brand-100/80 px-3 py-2 text-sm dark:bg-brand-800/50" [class.animate-pulse]="isParsing()">
             {{ statusMessage() }}
           </p>
+
+          @if (resume()) {
+            <div class="mt-4 rounded-xl border border-brand-200 p-3 dark:border-brand-700">
+              <p class="m-0 text-xs uppercase tracking-[0.12em] opacity-70">Extraction Quality</p>
+              <p class="m-0 mt-2 text-sm font-semibold" [class.text-amber-700]="missingSections().length > 0" [class.dark:text-amber-300]="missingSections().length > 0">
+                {{ missingSections().length === 0 ? 'Great: all major sections detected' : 'Partial: some sections are missing' }}
+              </p>
+              @if (missingSections().length > 0) {
+                <p class="m-0 mt-2 text-xs opacity-80">Missing: {{ missingSections().join(', ') }}</p>
+              }
+            </div>
+          }
 
           <div class="mt-4 grid grid-cols-2 gap-3">
             <div class="rounded-xl border border-brand-200 p-3 text-center dark:border-brand-700">
@@ -81,11 +97,11 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
 
         <article class="grid gap-5">
           @if (resume(); as model) {
-            <section class="rounded-2xl border border-brand-200/70 bg-gradient-to-br from-brand-100/80 to-white p-6 shadow-md dark:border-brand-700/60 dark:from-brand-900/70 dark:to-brand-950">
+            <section class="rounded-3xl border border-brand-200/70 bg-gradient-to-br from-brand-100/90 via-white to-brand-50 p-6 shadow-md dark:border-brand-700/60 dark:from-brand-900/70 dark:via-brand-900/65 dark:to-brand-950 md:p-8">
               <p class="m-0 text-xs uppercase tracking-[0.14em] opacity-70">Profile</p>
-              <h3 class="m-0 mt-2 text-3xl font-bold">{{ model.name }}</h3>
-              <p class="m-0 mt-1 text-lg opacity-90">{{ model.title }}</p>
-              <p class="m-0 mt-2 text-sm opacity-80">{{ model.location }} · {{ model.email }}</p>
+              <h3 class="m-0 mt-2 text-3xl font-bold md:text-4xl">{{ model.name }}</h3>
+              <p class="m-0 mt-1 text-lg opacity-90 md:text-xl">{{ model.title }}</p>
+              <p class="m-0 mt-2 text-sm opacity-80 md:text-base">{{ model.location }} · {{ model.email }}</p>
               <p class="m-0 mt-4 leading-7 opacity-90">{{ model.summary }}</p>
             </section>
 
@@ -102,7 +118,8 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
               <h4 class="m-0 text-xl font-semibold">Experience Timeline</h4>
               <div class="mt-4 grid gap-3">
                 @for (item of model.experience; track item.role + item.company + item.period) {
-                  <div class="rounded-xl border border-brand-200/80 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-950/40">
+                  <div class="relative rounded-xl border border-brand-200/80 bg-white/95 p-4 pl-6 dark:border-brand-700 dark:bg-brand-950/40">
+                    <span class="absolute left-2 top-5 h-2.5 w-2.5 rounded-full bg-brand-600"></span>
                     <p class="m-0 text-sm font-semibold">{{ item.role }} · {{ item.company }}</p>
                     <p class="m-0 mt-1 text-xs uppercase tracking-[0.12em] opacity-70">{{ item.period || 'Period not specified' }}</p>
                     @if (item.highlights.length > 0) {
@@ -166,6 +183,7 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
 export class ResumeStudioPage {
   readonly now = new Date();
   readonly resume = signal<ParsedResume | null>(null);
+  readonly isParsing = signal(false);
   readonly statusMessage = signal('Ready. Upload your resume to render it visually.');
 
   readonly stats = computed(() => {
@@ -178,12 +196,54 @@ export class ResumeStudioPage {
     };
   });
 
+  readonly missingSections = computed(() => {
+    const model = this.resume();
+    if (!model) {
+      return [] as string[];
+    }
+
+    const missing: string[] = [];
+    if (model.summary.length < 30) {
+      missing.push('Summary');
+    }
+    if (model.skills.length === 0) {
+      missing.push('Skills');
+    }
+    if (model.experience.length === 0) {
+      missing.push('Experience');
+    }
+    if (model.education.length === 0) {
+      missing.push('Education');
+    }
+    return missing;
+  });
+
   async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
       return;
     }
+
+    await this.processResumeFile(file);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) {
+      return;
+    }
+    await this.processResumeFile(file);
+  }
+
+  private async processResumeFile(file: File): Promise<void> {
+    this.isParsing.set(true);
+    this.statusMessage.set(`Parsing ${file.name}...`);
 
     try {
       const parsed = await parseResumeFile(file);
@@ -192,6 +252,8 @@ export class ResumeStudioPage {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Could not parse this file.';
       this.statusMessage.set(message);
+    } finally {
+      this.isParsing.set(false);
     }
   }
 
