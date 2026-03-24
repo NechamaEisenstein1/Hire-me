@@ -1,0 +1,9 @@
+Nechama Eisenstein
+Full Stack Engineer
+Email: nechama@example.com
+Location: Israel
+
+Summary:
+Product-minded engineer with a focus on scalable fullstack systems, strong UX, and production readiness.
+
+You can replace this file with your real resume (PDF/TXT) while keeping the same file name.

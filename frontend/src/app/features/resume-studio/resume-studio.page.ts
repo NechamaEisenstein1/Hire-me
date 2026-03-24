@@ -20,6 +20,13 @@ import { ParsedResume, parseResumeContent } from './resume-parser';
           </div>
           <div class="flex flex-wrap gap-2">
             <a
+              href="/public/my-resume.txt"
+              download
+              class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700"
+            >
+              Download My Resume
+            </a>
+            <a
               href="/public/resume-template.json"
               download
               class="rounded-xl bg-brand-700 px-4 py-2 text-sm font-semibold text-white no-underline hover:bg-brand-800"
