@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiBaseUrl: '',
+  apiRequestTimeoutMs: 30000,
   graphqlUrl: '/graphql',
   wsVisitorsUrl: (() => {
     const protocol = globalThis.location?.protocol === 'https:' ? 'wss' : 'ws';
