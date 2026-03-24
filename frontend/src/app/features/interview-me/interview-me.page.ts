@@ -30,7 +30,6 @@ export class InterviewMePage {
     if (this.isLoading()) {
       return;
     }
-
     if (!this.question.trim()) {
       return;
     }
