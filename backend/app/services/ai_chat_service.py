@@ -26,11 +26,21 @@ class AIProviderResponseError(AIServiceError):
     pass
 
 
-def _build_messages(question: str, settings: Settings) -> list[dict[str, str]]:
-    return [
+def _build_messages(
+    question: str,
+    settings: Settings,
+    *,
+    profile_context: str = "",
+) -> list[dict[str, str]]:
+    messages: list[dict[str, str]] = [
         {"role": "system", "content": settings.ai_system_prompt},
-        {"role": "user", "content": question.strip()},
     ]
+
+    if profile_context.strip():
+        messages.append({"role": "system", "content": profile_context.strip()})
+
+    messages.append({"role": "user", "content": question.strip()})
+    return messages
 
 
 def _extract_text_content(content: Any) -> str:
@@ -72,6 +82,8 @@ async def _request_groq_answer(
     question: str,
     settings: Settings,
     client: httpx.AsyncClient,
+    *,
+    profile_context: str = "",
 ) -> str:
     if not settings.groq_api_key:
         raise AIServiceConfigurationError(
@@ -81,7 +93,11 @@ async def _request_groq_answer(
     url = f"{settings.groq_base_url.rstrip('/')}{GROQ_CHAT_COMPLETIONS_PATH}"
     payload = {
         "model": settings.groq_model,
-        "messages": _build_messages(question, settings),
+        "messages": _build_messages(
+            question,
+            settings,
+            profile_context=profile_context,
+        ),
         "temperature": 0.2,
     }
     headers = {
@@ -122,11 +138,17 @@ async def _request_ollama_answer(
     question: str,
     settings: Settings,
     client: httpx.AsyncClient,
+    *,
+    profile_context: str = "",
 ) -> str:
     url = f"{settings.ollama_base_url.rstrip('/')}{OLLAMA_CHAT_PATH}"
     payload = {
         "model": settings.ollama_model,
-        "messages": _build_messages(question, settings),
+        "messages": _build_messages(
+            question,
+            settings,
+            profile_context=profile_context,
+        ),
         "stream": False,
     }
 
@@ -160,6 +182,7 @@ async def answer_interview_question(
     *,
     settings: Settings | None = None,
     client: httpx.AsyncClient | None = None,
+    profile_context: str = "",
 ) -> str:
     resolved_settings = settings or get_settings()
     provider = resolved_settings.ai_provider
@@ -171,10 +194,30 @@ async def answer_interview_question(
 
     if client is not None:
         if provider == "groq":
-            return await _request_groq_answer(question, resolved_settings, client)
-        return await _request_ollama_answer(question, resolved_settings, client)
+            return await _request_groq_answer(
+                question,
+                resolved_settings,
+                client,
+                profile_context=profile_context,
+            )
+        return await _request_ollama_answer(
+            question,
+            resolved_settings,
+            client,
+            profile_context=profile_context,
+        )
 
     async with _build_client(resolved_settings) as managed_client:
         if provider == "groq":
-            return await _request_groq_answer(question, resolved_settings, managed_client)
-        return await _request_ollama_answer(question, resolved_settings, managed_client)
+            return await _request_groq_answer(
+                question,
+                resolved_settings,
+                managed_client,
+                profile_context=profile_context,
+            )
+        return await _request_ollama_answer(
+            question,
+            resolved_settings,
+            managed_client,
+            profile_context=profile_context,
+        )

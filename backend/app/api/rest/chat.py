@@ -7,6 +7,10 @@ from app.services.ai_chat_service import (
     AIServiceConfigurationError,
     answer_interview_question,
 )
+from app.services.resume_profile_service import (
+    build_resume_profile_context,
+    get_resume_profile,
+)
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
 
@@ -31,8 +35,18 @@ class ChatResponse(BaseModel):
 
 @router.post('/messages', response_model=ChatResponse)
 async def chat(payload: ChatRequest) -> ChatResponse:
+    profile_context = ""
     try:
-        answer = await answer_interview_question(payload.question)
+        profile_context = build_resume_profile_context(get_resume_profile())
+    except Exception:
+        # Keep chat endpoint available even when resume profile source is unavailable.
+        profile_context = ""
+
+    try:
+        answer = await answer_interview_question(
+            payload.question,
+            profile_context=profile_context,
+        )
     except AIServiceConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

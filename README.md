@@ -9,6 +9,14 @@ A production-grade portfolio and interactive resume platform that demonstrates f
 - Use this single frontend/ directory for all Angular code changes.
 - Any previous standalone frontend repository is deprecated and should not be used for new changes.
 
+## Resume Ownership Model
+
+- Recruiters always see the public CV profile served from the backend `GET /api/v1/resume-profile` endpoint.
+- Resume updates are owner-only and require `X-Resume-Owner-Token` via:
+  - `POST /api/v1/resume-profile/verify`
+  - `PUT /api/v1/resume-profile`
+- Configure `RESUME_OWNER_TOKEN` to enable secure resume publishing.
+
 ## Stack
 
 - Backend: FastAPI, Pydantic v2, SQLAlchemy 2.0 async, Alembic, PostgreSQL, Strawberry GraphQL

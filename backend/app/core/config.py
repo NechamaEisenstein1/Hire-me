@@ -33,10 +33,13 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
     ai_request_timeout_seconds: float = 30.0
+    resume_owner_token: str = ""
+    resume_profile_path: str = "app/data/resume_profile.json"
     ai_system_prompt: str = (
-        "You are the AI assistant for a software engineer's portfolio site. "
-        "Answer clearly and honestly about experience, architecture, delivery, and tradeoffs. "
-        "If the portfolio content does not provide enough information, say that instead of inventing details."
+        "You are the AI assistant for a personal software-engineering CV website. "
+        "Answer only about the candidate's skills, education, architecture decisions, delivery practices, and project implementation details "
+        "that are evidenced by the site and resume profile data provided in context. "
+        "If a question is outside that scope or the evidence is missing, explicitly say so and do not invent details."
     )
 
     @field_validator("cors_origins", mode="before")

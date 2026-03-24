@@ -1,0 +1,44 @@
+{
+  "name": "Nechama Eisenstein",
+  "title": "Full Stack Engineer",
+  "location": "Israel",
+  "email": "nechama@example.com",
+  "summary": "Product-minded full stack engineer focused on robust backend architecture, UX-forward frontend delivery, and production readiness.",
+  "skills": [
+    "Angular",
+    "TypeScript",
+    "Python",
+    "FastAPI",
+    "PostgreSQL",
+    "Docker",
+    "AWS",
+    "GraphQL",
+    "WebSockets"
+  ],
+  "experience": [
+    {
+      "role": "Full Stack Engineer",
+      "company": "Personal Portfolio Product",
+      "period": "2025 - Present",
+      "highlights": [
+        "Built a fullstack CV platform with Angular, FastAPI, and realtime visitor telemetry.",
+        "Implemented AI interview assistant with strict context grounding to portfolio and resume data.",
+        "Designed production-ready infrastructure path with Terraform and containerized deployment flow."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Hire Me Platform",
+      "summary": "Interactive CV website with Resume Studio, AI interview assistant, 3D resume showcase, and live visitor counter.",
+      "stack": ["Angular", "FastAPI", "PostgreSQL", "Terraform", "Docker"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "B.Sc. Computer Science",
+      "school": "University",
+      "period": "2019 - 2023"
+    }
+  ]
+}
