@@ -2,6 +2,13 @@
 
 A production-grade portfolio and interactive resume platform that demonstrates full-stack engineering skills through implementation quality, performance, and architecture.
 
+## Workspace Roles (Important)
+
+- This repository is the backend and infrastructure workspace root.
+- Frontend source-of-truth is now this repository folder: c:\projects\hire-me\frontend.
+- Use this single frontend folder for all Angular code changes.
+- The sibling repository c:\projects\hire-me-frontend no longer contains a separate frontend folder.
+
 ## Stack
 
 - Backend: FastAPI, Pydantic v2, SQLAlchemy 2.0 async, Alembic, PostgreSQL, Strawberry GraphQL

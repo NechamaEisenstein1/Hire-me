@@ -1,0 +1,15 @@
+{
+  "folders": [
+    {
+      "name": "hire-me-backend",
+      "path": "c:\\projects\\hire-me"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/.mypy_cache": true,
+      "**/.ruff_cache": true,
+      "**/.pytest_cache": true
+    }
+  }
+}
