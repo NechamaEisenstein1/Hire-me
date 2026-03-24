@@ -91,8 +91,10 @@ export async function parseResumeFile(file: File): Promise<ParsedResume> {
 
 async function extractTextFromPdf(file: File): Promise<string> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  pdfjs.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs';
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).toString();
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
   const loadingTask = pdfjs.getDocument({ data: uint8Array });
