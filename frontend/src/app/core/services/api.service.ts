@@ -57,18 +57,42 @@ export class ApiService {
     }
   }
 
-  async get<T>(path: string): Promise<T> {
-    const response = await this.request(`${this.baseUrl}${path}`);
+  async get<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await this.request(`${this.baseUrl}${path}`, init);
     if (!response.ok) {
       throw await toApiError(response);
     }
     return (await response.json()) as T;
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
+  async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+    const mergedHeaders = {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {})
+    };
+
     const response = await this.request(`${this.baseUrl}${path}`, {
+      ...init,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mergedHeaders,
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
+    return (await response.json()) as T;
+  }
+
+  async put<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+    const mergedHeaders = {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {})
+    };
+
+    const response = await this.request(`${this.baseUrl}${path}`, {
+      ...init,
+      method: 'PUT',
+      headers: mergedHeaders,
       body: JSON.stringify(body)
     });
     if (!response.ok) {
