@@ -75,7 +75,10 @@ def _extract_text_content(content: Any) -> str:
 
 
 def _build_client(settings: Settings) -> httpx.AsyncClient:
-    return httpx.AsyncClient(timeout=settings.ai_request_timeout_seconds)
+    return httpx.AsyncClient(
+        timeout=settings.ai_request_timeout_seconds,
+        verify=settings.ai_verify_tls,
+    )
 
 
 async def _request_groq_answer(

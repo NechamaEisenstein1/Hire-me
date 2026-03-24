@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     rate_limit_requests_per_minute: int = 120
 
-    cors_origins: list[str] = ["http://localhost:4200"]
+    cors_origins: list[str] | str = "http://localhost:4200"
 
     database_url: str = ""  # Required: must be set via DATABASE_URL environment variable
 
@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
     ai_request_timeout_seconds: float = 30.0
+    ai_verify_tls: bool = True
     resume_owner_token: str = ""
     resume_profile_path: str = "app/data/resume_profile.json"
     analytics_stats_path: str = "app/data/site_analytics.json"
