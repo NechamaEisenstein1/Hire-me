@@ -29,9 +29,9 @@ def save_resume_profile(profile: dict[str, Any], *, settings: Settings | None = 
 
 
 def build_resume_profile_context(profile: dict[str, Any]) -> str:
-    skills = profile.get("skills") if isinstance(profile.get("skills"), list) else []
-    projects = profile.get("projects") if isinstance(profile.get("projects"), list) else []
-    education = profile.get("education") if isinstance(profile.get("education"), list) else []
+    skills = _as_list(profile.get("skills"))
+    projects = _as_list(profile.get("projects"))
+    education = _as_list(profile.get("education"))
 
     project_summaries: list[str] = []
     for item in projects[:4]:
@@ -67,6 +67,10 @@ def _resolve_profile_path(settings: Settings) -> Path:
 
     backend_root = Path(__file__).resolve().parents[2]
     return (backend_root / configured).resolve()
+
+
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
 
 
 def _default_profile_json() -> str:
