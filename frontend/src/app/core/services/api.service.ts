@@ -1,0 +1,79 @@
+import { Injectable } from '@angular/core';
+import { environment } from '../../../environments/environment';
+
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+type ErrorPayload = {
+  detail?: string;
+};
+
+async function toApiError(response: Response): Promise<ApiError> {
+  let detail = `Request failed: ${response.status}`;
+
+  try {
+    const payload = (await response.json()) as ErrorPayload;
+    if (typeof payload.detail === 'string' && payload.detail.trim()) {
+      detail = payload.detail;
+    }
+  } catch {
+    // Keep the default error message when response body is not JSON.
+  }
+
+  return new ApiError(response.status, detail);
+}
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private readonly baseUrl = environment.apiBaseUrl;
+  private readonly timeoutMs = environment.apiRequestTimeoutMs;
+
+  private async request(input: string, init?: RequestInit): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      return await fetch(input, { ...init, signal: controller.signal });
+    } catch (error: unknown) {
+      if (
+        controller.signal.aborted ||
+        (error instanceof DOMException && error.name === 'AbortError')
+      ) {
+        throw new ApiError(
+          504,
+          'The request took too long and timed out. Please try again.'
+        );
+      }
+      throw error;
+    } finally {
+      globalThis.clearTimeout(timeoutId);
+    }
+  }
+
+  async get<T>(path: string): Promise<T> {
+    const response = await this.request(`${this.baseUrl}${path}`);
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
+    return (await response.json()) as T;
+  }
+
+  async post<T>(path: string, body: unknown): Promise<T> {
+    const response = await this.request(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
+    return (await response.json()) as T;
+  }
+}
