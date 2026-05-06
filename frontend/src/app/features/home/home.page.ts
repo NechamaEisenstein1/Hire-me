@@ -1,123 +1,273 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { parseResumeFile } from '../resume-studio/resume-parser';
-
-type ResumePreview = {
-  name: string;
-  title: string;
-  location: string;
-  email: string;
-  summary: string;
-  skills: string[];
-  experience: Array<{
-    role: string;
-    company: string;
-    period: string;
-    highlights: string[];
-  }>;
-};
+import { ApiService } from '../../core/services/api.service';
+import { AppShellStore } from '../../core/stores/app-shell.store';
+import { ParsedResume, parseResumeFile } from '../resume-studio/resume-parser';
 
 @Component({
   standalone: true,
   imports: [RouterLink],
   template: `
-    <section class="grid gap-6 md:gap-8">
-      <div class="rounded-3xl border border-brand-200/70 bg-white/80 p-6 shadow-lg backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/45 md:p-10">
-        @if (resume(); as model) {
-          <p class="m-0 text-xs uppercase tracking-[0.18em] opacity-70">Resume Studio</p>
-          <h1 class="m-0 mt-2 text-4xl font-bold tracking-tight md:text-5xl">{{ model.name }}</h1>
-          <p class="m-0 mt-2 text-xl font-medium opacity-90">{{ model.title }}</p>
-          <p class="m-0 mt-2 text-sm opacity-80">{{ model.location }} · {{ model.email }}</p>
-          <p class="m-0 mt-5 max-w-3xl text-base leading-7 opacity-90 md:text-lg">{{ model.summary }}</p>
 
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white no-underline hover:bg-brand-800">
-              Download CV
-            </a>
-            <a routerLink="/interview-me" class="rounded-xl border border-brand-400 px-5 py-3 text-sm font-semibold no-underline hover:bg-brand-100 dark:hover:bg-brand-800/60">
-              Interview Me
-            </a>
-          </div>
-        } @else {
-          <p class="m-0 text-sm opacity-80">{{ statusMessage() }}</p>
-        }
-      </div>
-
-      @if (resume(); as model) {
-        <div class="grid gap-5 md:grid-cols-[1.2fr_1fr]">
-          <section class="rounded-2xl border border-brand-200/70 bg-white/80 p-6 shadow-sm dark:border-brand-700/60 dark:bg-brand-900/40">
-            <h2 class="m-0 text-xl font-semibold">Selected Experience</h2>
-            <div class="mt-4 grid gap-3">
-              @for (item of topExperience(); track item.role + item.company + item.period) {
-                <div class="rounded-xl border border-brand-200/80 bg-white/90 p-4 dark:border-brand-700 dark:bg-brand-950/40">
-                  <p class="m-0 text-sm font-semibold">{{ item.role }} · {{ item.company }}</p>
-                  <p class="m-0 mt-1 text-xs uppercase tracking-[0.12em] opacity-70">{{ item.period || 'Period not specified' }}</p>
-                  @if (item.highlights.length > 0) {
-                    <p class="m-0 mt-2 text-sm leading-6 opacity-90">{{ item.highlights[0] }}</p>
-                  }
-                </div>
-              }
-            </div>
-          </section>
-
-          <section class="rounded-2xl border border-brand-200/70 bg-white/80 p-6 shadow-sm dark:border-brand-700/60 dark:bg-brand-900/40">
-            <h2 class="m-0 text-xl font-semibold">Core Skills</h2>
-            <div class="mt-4 flex flex-wrap gap-2">
-              @for (skill of topSkills(); track skill) {
-                <span class="rounded-full border border-brand-300 bg-brand-100/70 px-3 py-1 text-xs font-semibold dark:border-brand-700 dark:bg-brand-800/50">{{ skill }}</span>
-              }
-            </div>
-          </section>
+    <!-- ════════════════════════════════ HERO / ABOUT ════════════════════════════════ -->
+    <section
+      id="about"
+      class="flex min-h-[calc(100svh-64px)] flex-col items-center justify-center px-6 py-24 text-center md:py-36"
+    >
+      @if (profile(); as model) {
+        <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-400">
+          {{ model.title }}
+        </p>
+        <h1 class="m-0 mt-4 text-5xl font-extrabold tracking-tight md:text-7xl">
+          {{ model.name }}
+        </h1>
+        <p class="m-0 mt-6 max-w-2xl text-base leading-8 opacity-80 md:text-lg">
+          {{ model.summary }}
+        </p>
+        <p class="m-0 mt-3 text-sm opacity-55">
+          {{ model.location }} · <a [attr.href]="'mailto:' + model.email" class="opacity-80 hover:opacity-100">{{ model.email }}</a>
+        </p>
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+          <a
+            href="/public/my-resume.pdf"
+            download
+            (click)="trackResumeDownload()"
+            class="rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white no-underline shadow-md transition hover:bg-brand-700 hover:shadow-lg"
+          >
+            Download Resume
+          </a>
+          <a
+            routerLink="/interview-me"
+            class="rounded-xl border border-brand-400 px-7 py-3.5 text-sm font-semibold no-underline transition hover:bg-brand-100 dark:border-brand-600 dark:hover:bg-brand-800/60"
+          >
+            Interview Me →
+          </a>
         </div>
+      } @else {
+        <p class="opacity-60">{{ loadingMessage() }}</p>
       }
     </section>
+
+    @if (profile(); as model) {
+
+      <!-- ════════════════════════════════ SKILLS ════════════════════════════════ -->
+      <section
+        id="skills"
+        class="scroll-mt-20 bg-brand-50/70 px-6 py-20 dark:bg-brand-900/30 md:py-28"
+      >
+        <div class="mx-auto max-w-4xl">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-400">
+            Toolkit
+          </p>
+          <h2 class="m-0 mt-3 text-3xl font-bold tracking-tight md:text-4xl">Technical Skills</h2>
+          <div class="mt-8 flex flex-wrap gap-3">
+            @for (skill of model.skills; track skill) {
+              <span
+                class="rounded-full border border-brand-300 bg-white px-4 py-2 text-sm font-medium shadow-sm dark:border-brand-700 dark:bg-brand-800/60"
+              >
+                {{ skill }}
+              </span>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ PROJECTS ════════════════════════════════ -->
+      <section
+        id="projects"
+        class="scroll-mt-20 px-6 py-20 md:py-28"
+      >
+        <div class="mx-auto max-w-6xl">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-400">
+            Work
+          </p>
+          <h2 class="m-0 mt-3 text-3xl font-bold tracking-tight md:text-4xl">Featured Projects</h2>
+          <div class="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            @for (project of featuredProjects(); track project.name) {
+              <article
+                class="flex flex-col rounded-2xl border border-brand-200/70 bg-white/80 p-6 shadow-sm backdrop-blur-sm transition hover:shadow-md dark:border-brand-700/60 dark:bg-brand-900/40"
+              >
+                <h3 class="m-0 text-base font-semibold">{{ project.name }}</h3>
+                <p class="m-0 mt-3 flex-1 text-sm leading-7 opacity-85">{{ project.summary }}</p>
+                @if (project.stack.length > 0) {
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    @for (tech of project.stack; track tech) {
+                      <span
+                        class="rounded-full bg-brand-100/80 px-2.5 py-1 text-xs font-medium dark:bg-brand-800/60"
+                      >
+                        {{ tech }}
+                      </span>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+          @if (hasMoreProjects()) {
+            <p class="mt-8 text-center">
+              <a
+                routerLink="/resume-studio"
+                class="text-sm font-medium text-brand-600 no-underline hover:underline dark:text-brand-400"
+              >
+                View all projects in Resume Studio →
+              </a>
+            </p>
+          }
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ EXPERIENCE ════════════════════════════════ -->
+      <section
+        id="experience"
+        class="scroll-mt-20 bg-brand-50/70 px-6 py-20 dark:bg-brand-900/30 md:py-28"
+      >
+        <div class="mx-auto max-w-4xl">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-400">
+            Career
+          </p>
+          <h2 class="m-0 mt-3 text-3xl font-bold tracking-tight md:text-4xl">Experience</h2>
+          <div class="mt-10 grid gap-5">
+            @for (job of model.experience; track job.role + job.company) {
+              <article
+                class="relative rounded-2xl border border-brand-200/70 bg-white/90 p-6 pl-8 shadow-sm dark:border-brand-700/60 dark:bg-brand-900/40"
+              >
+                <span
+                  class="absolute left-3 top-7 h-3 w-3 rounded-full bg-brand-500 ring-2 ring-brand-200 dark:ring-brand-800"
+                  aria-hidden="true"
+                ></span>
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <h3 class="m-0 text-base font-semibold">{{ job.role }}</h3>
+                    <p class="m-0 mt-0.5 text-sm opacity-70">{{ job.company }}</p>
+                  </div>
+                  <span
+                    class="rounded-full border border-brand-200 px-3 py-1 text-xs tracking-wide opacity-65 dark:border-brand-700"
+                  >
+                    {{ job.period }}
+                  </span>
+                </div>
+                @if (job.highlights.length > 0) {
+                  <ul class="m-0 mt-4 list-disc pl-4 text-sm leading-7 opacity-85">
+                    @for (line of job.highlights; track line) {
+                      <li>{{ line }}</li>
+                    }
+                  </ul>
+                }
+              </article>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ RESUME ════════════════════════════════ -->
+      <section
+        id="resume"
+        class="scroll-mt-20 px-6 py-20 text-center md:py-28"
+      >
+        <div class="mx-auto max-w-3xl">
+          <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] text-brand-600 dark:text-brand-400">
+            CV
+          </p>
+          <h2 class="m-0 mt-3 text-3xl font-bold tracking-tight md:text-4xl">Resume</h2>
+          <p class="m-0 mt-5 text-base leading-8 opacity-75 md:text-lg">
+            Download the PDF or open the interactive Resume Studio for the full career timeline, skills, and project details.
+          </p>
+          <div class="mt-10 flex flex-wrap justify-center gap-4">
+            <a
+              href="/public/my-resume.pdf"
+              download
+              (click)="trackResumeDownload()"
+              class="rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white no-underline shadow-md transition hover:bg-brand-700 hover:shadow-lg"
+            >
+              Download PDF
+            </a>
+            <a
+              routerLink="/resume-studio"
+              class="rounded-xl border border-brand-400 px-7 py-3.5 text-sm font-semibold no-underline transition hover:bg-brand-100 dark:border-brand-600 dark:hover:bg-brand-800/60"
+            >
+              Resume Studio
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════ CONTACT / AI CTA ════════════════════════════════ -->
+      <section
+        id="contact"
+        class="scroll-mt-20 bg-brand-600 px-6 py-20 text-center text-white md:py-28"
+      >
+        <p class="m-0 text-xs font-semibold uppercase tracking-[0.22em] opacity-70">Let's Talk</p>
+        <h2 class="m-0 mt-3 text-3xl font-bold tracking-tight md:text-4xl">Want to Know More?</h2>
+        <p class="m-0 mt-5 text-base leading-8 opacity-85 md:mx-auto md:max-w-xl md:text-lg">
+          Ask me directly about my experience, technical decisions, architecture tradeoffs,
+          and delivery approach — powered by AI.
+        </p>
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+          <a
+            routerLink="/interview-me"
+            class="rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-brand-700 no-underline shadow-md transition hover:bg-brand-50"
+          >
+            Start Interview →
+          </a>
+          <a
+            [attr.href]="'mailto:' + model.email"
+            class="rounded-xl border border-white/50 px-7 py-3.5 text-sm font-semibold text-white no-underline transition hover:bg-brand-700"
+          >
+            Email Me
+          </a>
+        </div>
+      </section>
+
+    }
   `
 })
 export class HomePage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly shellStore = inject(AppShellStore);
 
-  readonly resume = signal<ResumePreview | null>(null);
-  readonly statusMessage = signal('Loading resume...');
+  readonly profile = signal<ParsedResume | null>(null);
+  readonly loadingMessage = signal('Loading profile...');
 
-  readonly topSkills = computed(() => (this.resume()?.skills ?? []).slice(0, 12));
-  readonly topExperience = computed(() => (this.resume()?.experience ?? []).slice(0, 3));
+  readonly featuredProjects = computed(() => (this.profile()?.projects ?? []).slice(0, 3));
+  readonly hasMoreProjects = computed(() => (this.profile()?.projects.length ?? 0) > 3);
 
   async ngOnInit(): Promise<void> {
-    await this.loadResume();
+    await this.loadProfile();
   }
 
   trackResumeDownload(): void {
     this.analytics.trackResumeDownload().catch(() => {
-      // Ignore analytics tracking failures for recruiter UX.
+      // Ignore analytics failures for recruiter UX.
     });
   }
 
-  private async loadResume(): Promise<void> {
+  private async loadProfile(): Promise<void> {
     try {
-      const profile = await this.api.get<ResumePreview>('/api/v1/resume-profile');
-      this.resume.set(profile);
-      this.statusMessage.set('');
+      const data = await this.api.get<ParsedResume>('/api/v1/resume-profile');
+      this.profile.set(data);
+      this.shellStore.setCandidateName(data.name);
       return;
     } catch {
-      // Fall back to the bundled default PDF resume.
+      // Fall through to bundled PDF fallback.
     }
 
     try {
       const response = await fetch('/public/my-resume.pdf');
       if (!response.ok) {
-        throw new Error('Default resume PDF is missing.');
+        throw new Error('Resume PDF unavailable.');
       }
       const blob = await response.blob();
       const file = new File([blob], 'my-resume.pdf', { type: blob.type || 'application/pdf' });
       const parsed = await parseResumeFile(file);
-      this.resume.set(parsed);
-      this.statusMessage.set('');
+      this.profile.set(parsed);
+      this.shellStore.setCandidateName(parsed.name);
     } catch {
-      this.statusMessage.set('Resume is temporarily unavailable.');
+      this.loadingMessage.set('Profile is temporarily unavailable.');
     }
   }
 }
+
+

@@ -8,7 +8,8 @@ import { ChatbotService } from '../../core/services/chatbot.service';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <section class="mt-8 rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
+    <div class="mx-auto max-w-4xl px-4 py-8 md:px-8">
+    <section class="rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
       <h2 class="mb-4 text-2xl font-semibold">Interview Me</h2>
       <div class="grid gap-3">
         <textarea [(ngModel)]="question" rows="4" class="w-full rounded-lg border border-brand-300 bg-white p-3 dark:border-brand-700 dark:bg-brand-950/60" placeholder="Ask about architecture decisions, tradeoffs, and delivery." [disabled]="isLoading()" [attr.dir]="containsHebrew(question) ? 'rtl' : 'ltr'" [class.text-right]="containsHebrew(question)" [class.text-left]="!containsHebrew(question)"></textarea>
@@ -18,6 +19,7 @@ import { ChatbotService } from '../../core/services/chatbot.service';
         <p class="m-0 whitespace-pre-wrap leading-8" [class.text-red-600]="isError()" [class.dark:text-red-300]="isError()">{{ answer() }}</p>
       </div>
     </section>
+    </div>
   `
 })
 export class InterviewMePage {

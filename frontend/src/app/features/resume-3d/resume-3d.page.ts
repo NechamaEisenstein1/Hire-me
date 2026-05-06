@@ -5,7 +5,8 @@ import * as THREE from 'three';
 @Component({
   standalone: true,
   template: `
-    <section class="mt-8 rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
+    <div class="mx-auto max-w-5xl px-4 py-8 md:px-8">
+    <section class="rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
       <h2 class="mb-4 text-2xl font-semibold">3D Interactive Resume</h2>
       <p class="mb-4 text-sm opacity-80">Drag your mouse over the scene to tilt the card and verify the interaction is alive.</p>
 
@@ -17,6 +18,7 @@ import * as THREE from 'three';
 
       <div #canvasHost class="mt-4 h-[60vh] w-full overflow-hidden rounded-xl border border-brand-200/70 bg-gradient-to-br from-brand-100 via-brand-50 to-emerald-50 dark:border-brand-700/60 dark:from-brand-900/60 dark:via-brand-900/20 dark:to-emerald-900/30"></div>
     </section>
+    </div>
   `
 })
 export class Resume3dPage implements AfterViewInit, OnDestroy {

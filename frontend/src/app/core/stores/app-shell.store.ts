@@ -1,7 +1,12 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-type NavLink = {
+export type SectionLink = {
+  readonly label: string;
+  readonly fragment: string;
+};
+
+export type FeatureLink = {
   readonly path: string;
   readonly label: string;
 };
@@ -10,12 +15,25 @@ type NavLink = {
 export class AppShellStore {
   private readonly document = inject(DOCUMENT);
 
-  readonly navLinks: ReadonlyArray<NavLink> = [
-    { path: '/', label: 'Home' },
-    { path: '/resume-studio', label: 'Resume Studio' },
-    { path: '/resume-3d', label: '3D Resume' },
-    { path: '/interview-me', label: 'Interview Me' }
+  /** In-page section anchors displayed as the primary nav. */
+  readonly sectionLinks: ReadonlyArray<SectionLink> = [
+    { label: 'About',      fragment: 'about'      },
+    { label: 'Skills',     fragment: 'skills'     },
+    { label: 'Projects',   fragment: 'projects'   },
+    { label: 'Experience', fragment: 'experience' },
+    { label: 'Resume',     fragment: 'resume'     },
+    { label: 'Contact',    fragment: 'contact'    },
   ];
+
+  /** Secondary routes for advanced features, shown in sidenav and desktop utility area. */
+  readonly featureLinks: ReadonlyArray<FeatureLink> = [
+    { path: '/interview-me',  label: 'Interview Me'  },
+    { path: '/resume-studio', label: 'Resume Studio' },
+    { path: '/resume-3d',     label: '3D Resume'     },
+  ];
+
+  /** Candidate display name, updated after the resume profile loads. */
+  readonly candidateName = signal('Portfolio');
 
   readonly darkMode = signal(this.getInitialDarkMode());
   readonly sidenavOpened = signal(false);
@@ -26,6 +44,12 @@ export class AppShellStore {
     this.applyThemeClass(this.darkMode());
     globalThis.addEventListener('online', () => this.isOnline.set(true));
     globalThis.addEventListener('offline', () => this.isOnline.set(false));
+  }
+
+  setCandidateName(name: string): void {
+    if (name?.trim()) {
+      this.candidateName.set(name.trim());
+    }
   }
 
   toggleTheme(): void {

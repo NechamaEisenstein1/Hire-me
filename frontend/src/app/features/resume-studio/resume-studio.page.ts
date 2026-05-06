@@ -9,6 +9,7 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
   standalone: true,
   imports: [DatePipe],
   template: `
+    <div class="mx-auto max-w-6xl px-4 py-8 md:px-8">
     <section class="grid gap-6">
       <div class="rounded-3xl border border-brand-200/70 bg-white/80 p-6 shadow-lg backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/45 md:p-8">
         <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -152,6 +153,7 @@ import { ParsedResume, parseResumeFile } from './resume-parser';
 
       <p class="text-xs opacity-70">Last updated: {{ now | date : 'medium' }}</p>
     </section>
+    </div>
   `
 })
 export class ResumeStudioPage implements OnInit {
