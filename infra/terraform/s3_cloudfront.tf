@@ -1,7 +1,5 @@
-data "aws_caller_identity" "current" {}
-
 resource "aws_s3_bucket" "frontend" {
-  bucket = "${var.project_name}-frontend-${var.environment}-${data.aws_caller_identity.current.account_id}"
+  bucket = "${var.project_name}-frontend-${var.environment}-${var.aws_account_id}"
 
   tags = local.tags
 }
@@ -66,7 +64,7 @@ resource "aws_s3_bucket_policy" "frontend" {
         Condition = {
           StringEquals = {
             "AWS:SourceArn"     = aws_cloudfront_distribution.frontend.arn
-            "AWS:SourceAccount" = data.aws_caller_identity.current.account_id
+            "AWS:SourceAccount" = var.aws_account_id
           }
         }
       }

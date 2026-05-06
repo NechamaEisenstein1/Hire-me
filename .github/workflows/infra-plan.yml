@@ -78,4 +78,5 @@ jobs:
           TF_VAR_db_password: ciPlaceholderPass123!
           TF_VAR_vpc_id: vpc-00000000000000000
           TF_VAR_private_subnet_ids: '["subnet-00000000000000000","subnet-11111111111111111"]'
+          TF_VAR_aws_account_id: "000000000000"
         run: terraform plan -input=false -refresh=false -lock=false

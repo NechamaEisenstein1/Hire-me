@@ -46,3 +46,8 @@ variable "environment" {
     error_message = "Environment must be dev, staging, or prod."
   }
 }
+
+variable "aws_account_id" {
+  description = "AWS account ID, used to construct globally-unique resource names (e.g. S3 bucket suffix)."
+  type        = string
+}
