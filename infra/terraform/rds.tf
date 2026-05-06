@@ -35,19 +35,19 @@ resource "aws_db_instance" "postgres" {
   username = "hiremeadmin"
   password = var.db_password
 
-  db_subnet_group_name            = aws_db_subnet_group.main.name
-  vpc_security_group_ids          = [aws_security_group.rds.id]
-  publicly_accessible             = false
-  storage_encrypted               = true
-  storage_type                    = "gp3"
-  backup_retention_period         = var.environment == "prod" ? 30 : 7
-  skip_final_snapshot             = var.environment == "prod" ? false : true
-  final_snapshot_identifier       = var.environment == "prod" ? "${var.project_name}-postgres-${var.environment}-final" : null
-  deletion_protection             = var.environment == "prod" ? true : false
+  db_subnet_group_name                = aws_db_subnet_group.main.name
+  vpc_security_group_ids              = [aws_security_group.rds.id]
+  publicly_accessible                 = false
+  storage_encrypted                   = true
+  storage_type                        = "gp3"
+  backup_retention_period             = var.environment == "prod" ? 30 : 7
+  skip_final_snapshot                 = var.environment == "prod" ? false : true
+  final_snapshot_identifier           = var.environment == "prod" ? "${var.project_name}-postgres-${var.environment}-final" : null
+  deletion_protection                 = var.environment == "prod" ? true : false
   enabled_cloudwatch_logs_exports     = ["postgresql"]
   iam_database_authentication_enabled = true
-  multi_az                        = var.environment == "prod" ? true : false
-  copy_tags_to_snapshot           = true
+  multi_az                            = var.environment == "prod" ? true : false
+  copy_tags_to_snapshot               = true
 
   tags = local.tags
 }

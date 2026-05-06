@@ -39,6 +39,7 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      AI_VERIFY_TLS: ${AI_VERIFY_TLS:-true}
     ports:
       - "8000:8000"
     depends_on:

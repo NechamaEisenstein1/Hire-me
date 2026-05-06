@@ -13,10 +13,17 @@
             "outputPath": "dist/hire-me-frontend",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [
+              "zone.js"
+            ],
             "tsConfig": "tsconfig.json",
-            "assets": ["src/public"],
-            "styles": ["@angular/material/prebuilt-themes/indigo-pink.css", "src/styles.css"],
+            "assets": [
+              "src/public"
+            ],
+            "styles": [
+              "@angular/material/prebuilt-themes/indigo-pink.css",
+              "src/styles.css"
+            ],
             "scripts": []
           },
           "configurations": {
@@ -27,6 +34,7 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ],
+              "serviceWorker": "ngsw-config.json",
               "optimization": true,
               "sourceMap": false,
               "namedChunks": false,

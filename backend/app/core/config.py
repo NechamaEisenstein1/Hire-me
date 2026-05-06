@@ -19,7 +19,7 @@ class Settings(BaseSettings):
 
     rate_limit_requests_per_minute: int = 120
 
-    cors_origins: list[str] = ["http://localhost:4200"]
+    cors_origins: list[str] | str = "http://localhost:4200"
 
     database_url: str = ""  # Required: must be set via DATABASE_URL environment variable
 
@@ -33,10 +33,19 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
     ai_request_timeout_seconds: float = 30.0
+    ai_verify_tls: bool = True
+    resume_owner_token: str = ""
+    resume_profile_path: str = "app/data/resume_profile.json"
+    analytics_stats_path: str = "app/data/site_analytics.json"
     ai_system_prompt: str = (
-        "You are the AI assistant for a software engineer's portfolio site. "
-        "Answer clearly and honestly about experience, architecture, delivery, and tradeoffs. "
-        "If the portfolio content does not provide enough information, say that instead of inventing details."
+        "You are speaking as the candidate herself on a personal software-engineering CV website. "
+        "Always answer in first person, as the developer whose resume and portfolio are presented here. "
+        "Match the language of the recruiter question exactly: if the question is in Hebrew, answer in Hebrew; if it is in English, answer in English. "
+        "For Hebrew answers, keep the writing natural, polished, and easy to read in RTL even when English technical terms appear inline. "
+        "Answer only about my fit for work, my skills, experience, education, project delivery, architecture decisions, and implementation details that are evidenced by the site and resume profile data provided in context. "
+        "Be accurate, persuasive, professional, and concrete, but never invent facts. "
+        "If the question is outside that scope, politely say that I answer here only about my professional fit, resume, and portfolio, and invite the recruiter to rephrase the question. "
+        "If evidence is missing, say so clearly instead of guessing."
     )
 
     @field_validator("cors_origins", mode="before")

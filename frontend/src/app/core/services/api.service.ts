@@ -15,6 +15,18 @@ type ErrorPayload = {
   detail?: string;
 };
 
+function hasResponseBody(response: Response): boolean {
+  if (response.status === 204 || response.status === 205) {
+    return false;
+  }
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return false;
+  }
+  const contentType = response.headers.get('content-type');
+  return contentType !== null && contentType.length > 0;
+}
+
 async function toApiError(response: Response): Promise<ApiError> {
   let detail = `Request failed: ${response.status}`;
 
@@ -57,23 +69,47 @@ export class ApiService {
     }
   }
 
-  async get<T>(path: string): Promise<T> {
-    const response = await this.request(`${this.baseUrl}${path}`);
+  async get<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await this.request(`${this.baseUrl}${path}`, init);
     if (!response.ok) {
       throw await toApiError(response);
     }
-    return (await response.json()) as T;
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
   }
 
-  async post<T>(path: string, body: unknown): Promise<T> {
+  async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+    const mergedHeaders = {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {})
+    };
+
     const response = await this.request(`${this.baseUrl}${path}`, {
+      ...init,
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: mergedHeaders,
       body: JSON.stringify(body)
     });
     if (!response.ok) {
       throw await toApiError(response);
     }
-    return (await response.json()) as T;
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
+  }
+
+  async put<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
+    const mergedHeaders = {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {})
+    };
+
+    const response = await this.request(`${this.baseUrl}${path}`, {
+      ...init,
+      method: 'PUT',
+      headers: mergedHeaders,
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) {
+      throw await toApiError(response);
+    }
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
   }
 }

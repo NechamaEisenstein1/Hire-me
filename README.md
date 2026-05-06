@@ -2,6 +2,23 @@
 
 A production-grade portfolio and interactive resume platform that demonstrates full-stack engineering skills through implementation quality, performance, and architecture.
 
+## Workspace Roles (Important)
+
+- This repository is the fullstack workspace root.
+- Frontend source-of-truth is the frontend/ directory in this repository.
+- Use this single frontend/ directory for all Angular code changes.
+- Any previous standalone frontend repository is deprecated and should not be used for new changes.
+
+## Resume Ownership Model
+
+- Recruiters always see the public CV profile served from the backend `GET /api/v1/resume-profile` endpoint.
+- Resume updates are owner-only and require `X-Resume-Owner-Token` via:
+  - `POST /api/v1/resume-profile/verify`
+  - `PUT /api/v1/resume-profile`
+- Configure `RESUME_OWNER_TOKEN` to enable secure resume publishing.
+- Private owner panel route: `/owner-admin` (not linked in public navigation).
+- Daily owner metrics endpoint: `GET /api/v1/analytics/admin/today` with `X-Resume-Owner-Token`.
+
 ## Stack
 
 - Backend: FastAPI, Pydantic v2, SQLAlchemy 2.0 async, Alembic, PostgreSQL, Strawberry GraphQL

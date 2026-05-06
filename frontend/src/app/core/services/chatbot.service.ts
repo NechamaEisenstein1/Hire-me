@@ -1,17 +1,226 @@
 import { Injectable } from '@angular/core';
 
+import { parseResumeFile } from '../../features/resume-studio/resume-parser';
 import { ApiService } from './api.service';
 
 type ChatResponse = {
   answer: string;
 };
 
+type ResumeProfileContext = {
+  name: string;
+  title: string;
+  summary: string;
+  skills: string[];
+  education: Array<{ degree: string; school: string }>;
+  projects: Array<{ name: string; summary: string }>;
+};
+
+type SupportedLanguage = 'he' | 'en';
+
 @Injectable({ providedIn: 'root' })
 export class ChatbotService {
   constructor(private readonly api: ApiService) {}
 
   async ask(question: string): Promise<string> {
-    const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', { question });
-    return response.answer;
+    const normalizedQuestion = question.trim();
+    const language = this.detectLanguage(normalizedQuestion);
+    let scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
+
+    try {
+      const profile = await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
+      scopedQuestion = `${scopedQuestion}\n\nCandidate profile context:\n${JSON.stringify(
+        {
+          name: profile.name,
+          title: profile.title,
+          summary: profile.summary,
+          skills: profile.skills,
+          education: profile.education,
+          projects: profile.projects
+        },
+        null,
+        2
+      )}`;
+    } catch {
+      // If profile context is unavailable, continue with strict guardrails only.
+    }
+
+    try {
+      const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
+        question: scopedQuestion
+      });
+      return response.answer;
+    } catch {
+      const fallbackProfile = await this.loadFallbackProfile();
+      return this.buildLocalFallbackAnswer(normalizedQuestion, fallbackProfile, language);
+    }
+  }
+
+  private buildGuardedQuestion(question: string): string {
+    const language = this.detectLanguage(question);
+    const refusalMessage = this.buildOutOfScopeReply(language);
+
+    return [
+      'You are the candidate herself. Answer in first person singular.',
+      language === 'he'
+        ? 'The recruiter asked in Hebrew. Reply in polished Hebrew, keep the text easy to read in RTL, and keep English technical terms readable inline.'
+        : 'The recruiter asked in English. Reply in polished English with a clear LTR structure.',
+      'Answer only about job fit, resume evidence, professional experience, education, skills, projects, portfolio implementation, architecture decisions, and delivery practices that are actually evidenced by the profile and site.',
+      'Be accurate, persuasive, and professional, but do not invent facts or experience.',
+      'If information is missing, say that clearly instead of guessing.',
+      `If the question is outside this scope, reply with this exact message: ${refusalMessage}`,
+      '',
+      `Recruiter question: ${question.trim()}`
+    ].join('\n');
+  }
+
+  private async loadFallbackProfile(): Promise<ResumeProfileContext | null> {
+    try {
+      return await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
+    } catch {
+      // Continue to bundled CV fallback.
+    }
+
+    try {
+      const response = await fetch('/public/my-resume.pdf');
+      if (!response.ok) {
+        return null;
+      }
+
+      const blob = await response.blob();
+      const file = new File([blob], 'my-resume.pdf', {
+        type: blob.type || 'application/pdf'
+      });
+
+      const parsed = await parseResumeFile(file);
+      return {
+        name: parsed.name,
+        title: parsed.title,
+        summary: parsed.summary,
+        skills: parsed.skills,
+        education: parsed.education,
+        projects: parsed.projects
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private buildLocalFallbackAnswer(
+    question: string,
+    profile: ResumeProfileContext | null,
+    language: SupportedLanguage
+  ): string {
+    if (!profile) {
+      return language === 'he'
+        ? 'כרגע אין לי גישה למנוע ה-AI וגם לא לפרופיל קורות החיים, אז אני לא רוצה לענות תשובה לא מדויקת. אפשר לנסות שוב בעוד רגע.'
+        : 'I do not currently have access to the AI provider or the resume profile, so I prefer not to answer inaccurately. Please try again in a moment.';
+    }
+
+    if (!this.isCareerRelevantQuestion(question, profile)) {
+      return this.buildOutOfScopeReply(language);
+    }
+
+    const q = question.toLowerCase();
+
+    if (q.includes('skill') || q.includes('technology') || q.includes('tech stack')) {
+      const topSkills = profile.skills.slice(0, 8).join(', ');
+      return language === 'he'
+        ? `מבחינת סט טכנולוגי, אני מביאה ניסיון רלוונטי ב-${topSkills || 'הטכנולוגיות עדיין לא צוינו בפרופיל'}. אני לומדת מהר, נכנסת מהר לקוד קיים, ויודעת לחבר בין צד לקוח, צד שרת וחשיבה מוצרית.`
+        : `From a technology standpoint, I bring relevant experience in ${topSkills || 'the technologies are not specified in the profile yet'}. I ramp up quickly, work well in existing codebases, and connect frontend, backend, and product thinking effectively.`;
+    }
+
+    if (
+      q.includes('project') ||
+      q.includes('architecture') ||
+      q.includes('system') ||
+      q.includes('aws') ||
+      q.includes('cloud') ||
+      q.includes('deploy') ||
+      q.includes('delivery')
+    ) {
+      const project = profile.projects[0];
+      if (project) {
+        return language === 'he'
+          ? `אחד הפרויקטים הבולטים שאני מציגה הוא ${project.name}. ${project.summary || 'בפרופיל הנוכחי אין עדיין פירוט מלא, ולכן אני מעדיפה לא להמציא פרטים מעבר למה שמופיע שם.'} מה שחשוב מבחינתי הוא לא רק לבנות פיצ'ר, אלא גם למסגר אותו בצורה ברורה, תחזוקתית ומותאמת לצורך העסקי.`
+          : `One of the strongest projects I present is ${project.name}. ${project.summary || 'The current profile does not include a fuller summary yet, so I prefer not to invent details beyond what is documented there.'} What matters to me is not only building features, but delivering them in a clear, maintainable, and business-aware way.`;
+      }
+      return language === 'he'
+        ? 'כרגע אין בפרופיל פירוט מספק על פרויקטים או ארכיטקטורה, ולכן אני מעדיפה להישאר מדויקת ולא לנסח תשובה מעבר למה שמתועד.'
+        : 'The current profile does not include enough project or architecture detail for me to answer precisely, so I prefer to stay accurate rather than overstate anything.';
+    }
+
+    if (q.includes('education') || q.includes('degree') || q.includes('university')) {
+      const firstEducation = profile.education[0];
+      if (firstEducation) {
+        return language === 'he'
+          ? `מבחינת רקע אקדמי, למדתי ${firstEducation.degree} ב-${firstEducation.school}. אני רואה בלמידה מסודרת בסיס חשוב, אבל הערך שאני מביאה בפועל הוא היכולת לקחת ידע ולהפוך אותו לביצוע אמיתי.`
+          : `From an academic perspective, I studied ${firstEducation.degree} at ${firstEducation.school}. I see formal learning as an important foundation, but the value I bring in practice is the ability to turn knowledge into execution.`;
+      }
+      return language === 'he'
+        ? 'כרגע אין בפרופיל פירוט על ההשכלה, ולכן אני מעדיפה לא להשלים פרטים שלא מופיעים במפורש.'
+        : 'The current profile does not include education details, so I prefer not to fill in information that is not explicitly documented.';
+    }
+
+    if (language === 'he') {
+      return [
+        'כרגע מנוע ה-AI החיצוני לא זמין, אז אני עונה לפי קורות החיים והפרופיל הקיים בלבד.',
+        `אני ${profile.name}, ${profile.title}.`,
+        profile.summary ? `בקצרה עליי: ${profile.summary}` : 'בקצרה עליי: הפרופיל עדיין לא כולל תקציר מפורט.',
+        profile.skills.length > 0 ? `החוזקות המרכזיות שלי כוללות ${profile.skills.slice(0, 6).join(', ')}.` : 'החוזקות המרכזיות שלי עדיין לא פורטו בפרופיל.',
+        profile.projects.length > 0
+          ? `פרויקט בולט שאני מציגה הוא ${profile.projects[0].name}${profile.projects[0].summary ? ` - ${profile.projects[0].summary}` : ''}.`
+          : 'כרגע אין בפרופיל פרויקט מתועד שאוכל להישען עליו בתשובה מדויקת.',
+        'אם תרצי, אפשר לשאול אותי באופן ממוקד על ניסיון, טכנולוגיות, פרויקטים, סגנון עבודה או התאמה לתפקיד.'
+      ].join(' ');
+    }
+
+    return [
+      'The external AI provider is temporarily unavailable, so I am answering strictly from the documented resume profile.',
+      `I am ${profile.name}, ${profile.title}.`,
+      profile.summary ? `In brief: ${profile.summary}` : 'In brief: the profile does not yet include a fuller summary.',
+      profile.skills.length > 0 ? `My strongest areas include ${profile.skills.slice(0, 6).join(', ')}.` : 'My strongest areas are not detailed in the current profile yet.',
+      profile.projects.length > 0
+        ? `A featured project is ${profile.projects[0].name}${profile.projects[0].summary ? ` - ${profile.projects[0].summary}` : ''}.`
+        : 'The current profile does not yet document a project I can reference precisely.',
+      'If helpful, you can ask me more specifically about experience, technologies, projects, work style, or fit for the role.'
+    ].join(' ');
+  }
+
+  private detectLanguage(text: string): SupportedLanguage {
+    return /[\u0590-\u05FF]/.test(text) ? 'he' : 'en';
+  }
+
+  private buildOutOfScopeReply(language: SupportedLanguage): string {
+    return language === 'he'
+      ? 'בשמחה. כאן אני עונה רק על שאלות שקשורות להתאמה שלי לתפקיד, לניסיון שלי, לפרויקטים שלי ולקורות החיים שלי. השאלה הזו נראית כרגע מחוץ למסגרת הזאת. אם התכוונת לנושא מקצועי או תעסוקתי, אשמח מאוד אם תנסח או תנסחי אותה מחדש.'
+      : 'I am happy to help. In this interview space, I answer only questions related to my fit for the role, my experience, my projects, and my resume. This question currently seems outside that scope. If you meant it in a professional or hiring context, I would be glad if you rephrased it.';
+  }
+
+  private isCareerRelevantQuestion(question: string, profile: ResumeProfileContext): boolean {
+    const normalizedQuestion = question.toLowerCase();
+    const relevantTerms = [
+      'experience', 'project', 'projects', 'skill', 'skills', 'technology', 'tech', 'stack',
+      'architecture', 'system', 'delivery', 'team', 'role', 'job', 'work', 'fit', 'resume', 'cv',
+      'education', 'degree', 'university', 'backend', 'frontend', 'full stack', 'aws', 'cloud',
+      'ניסיון', 'פרויקט', 'פרויקטים', 'טכנולוג', 'ארכיטקטורה', 'מערכת', 'משרה', 'תפקיד', 'עבודה',
+      'התאמה', 'קורות', 'חיים', 'השכלה', 'לימודים', 'פיתוח', 'מפתחת', 'בקאנד', 'פרונט', 'ענן'
+    ];
+
+    if (relevantTerms.some((term) => normalizedQuestion.includes(term))) {
+      return true;
+    }
+
+    const profileTerms = [
+      profile.name,
+      profile.title,
+      ...profile.skills,
+      ...profile.projects.map((project) => project.name),
+      ...profile.education.flatMap((item) => [item.degree, item.school])
+    ]
+      .map((item) => item.toLowerCase().trim())
+      .filter((item) => item.length >= 3);
+
+    return profileTerms.some((term) => normalizedQuestion.includes(term));
   }
 }

@@ -11,11 +11,30 @@ body {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   background: radial-gradient(circle at 15% 20%, #f6f8f4 0%, #e4edd8 35%, #d7e6c6 100%);
   color: #1e2a12;
+}
+
+.mat-toolbar {
+  --mat-toolbar-container-background-color: transparent;
+}
+
+.mdc-list-item--activated {
+  background: rgba(111, 155, 61, 0.15);
+  border-radius: 0.75rem;
 }
 
 .dark body {
