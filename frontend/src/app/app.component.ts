@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,16 +52,16 @@ import { AppShellStore } from './core/stores/app-shell.store';
               routerLink="/"
               [fragment]="link.fragment"
               class="relative rounded-lg px-3 py-1.5 text-sm no-underline transition-all duration-200"
-              [class.font-semibold]="shellStore.activeSection() === link.fragment"
-              [class.text-brand-600]="shellStore.activeSection() === link.fragment"
-              [class.dark:text-brand-400]="shellStore.activeSection() === link.fragment"
-              [class.opacity-100]="shellStore.activeSection() === link.fragment"
-              [class.font-medium]="shellStore.activeSection() !== link.fragment"
-              [class.opacity-50]="shellStore.activeSection() !== link.fragment"
-              [class.hover:opacity-100]="shellStore.activeSection() !== link.fragment"
+              [class.font-semibold]="isHomeRoute() && shellStore.activeSection() === link.fragment"
+              [class.text-brand-600]="isHomeRoute() && shellStore.activeSection() === link.fragment"
+              [class.dark:text-brand-400]="isHomeRoute() && shellStore.activeSection() === link.fragment"
+              [class.opacity-100]="isHomeRoute() && shellStore.activeSection() === link.fragment"
+              [class.font-medium]="!isHomeRoute() || shellStore.activeSection() !== link.fragment"
+              [class.opacity-50]="!isHomeRoute() || shellStore.activeSection() !== link.fragment"
+              [class.hover:opacity-100]="!isHomeRoute() || shellStore.activeSection() !== link.fragment"
             >
               {{ link.label }}
-              @if (shellStore.activeSection() === link.fragment) {
+              @if (isHomeRoute() && shellStore.activeSection() === link.fragment) {
                 <span class="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-brand-500" aria-hidden="true"></span>
               }
             </a>
@@ -153,11 +153,16 @@ import { AppShellStore } from './core/stores/app-shell.store';
 })
 export class AppComponent {
   protected readonly shellStore = inject(AppShellStore);
+  private readonly router = inject(Router);
   private readonly analytics = inject(AnalyticsService);
 
   constructor() {
     this.analytics.trackVisit().catch(() => {
       // Ignore analytics failures in UI bootstrap.
     });
+  }
+
+  protected isHomeRoute(): boolean {
+    return this.router.url === '/' || this.router.url.startsWith('/#') || this.router.url.startsWith('/?');
   }
 }

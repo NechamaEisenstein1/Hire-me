@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, inject, signal } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
@@ -272,12 +272,14 @@ type GitHubRepo = {
     }
   `
 })
-export class HomePage implements OnInit, AfterViewInit, OnDestroy {
+export class HomePage implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
   private readonly shellStore = inject(AppShellStore);
 
   private sectionObserver: IntersectionObserver | null = null;
+  private readonly observedSectionIds = new Set<string>();
+  private githubReposAbortController: AbortController | null = null;
 
   readonly profile = signal<ParsedResume | null>(null);
   readonly loadingMessage = signal('Loading profile...');
@@ -290,7 +292,6 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const sectionIds = ['about', 'skills', 'projects', 'experience', 'resume', 'contact'];
     this.sectionObserver = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -301,14 +302,34 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       },
       { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
     );
-    for (const id of sectionIds) {
-      const el = document.getElementById(id);
-      if (el) this.sectionObserver.observe(el);
-    }
+    this.observeAvailableSections();
+  }
+
+  ngAfterViewChecked(): void {
+    this.observeAvailableSections();
   }
 
   ngOnDestroy(): void {
     this.sectionObserver?.disconnect();
+    this.githubReposAbortController?.abort();
+  }
+
+  private observeAvailableSections(): void {
+    if (!this.sectionObserver) {
+      return;
+    }
+
+    const sectionIds = this.shellStore.sectionLinks.map((link) => link.fragment);
+    for (const id of sectionIds) {
+      if (this.observedSectionIds.has(id)) {
+        continue;
+      }
+      const el = document.getElementById(id);
+      if (el) {
+        this.sectionObserver.observe(el);
+        this.observedSectionIds.add(id);
+      }
+    }
   }
 
   initials(name: string): string {
@@ -328,10 +349,15 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async loadGithubRepos(): Promise<void> {
+    this.githubReposAbortController?.abort();
+    this.githubReposAbortController = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => this.githubReposAbortController?.abort(), 8000);
+
     try {
       const username = this.profile()?.githubUsername ?? 'NechamaEisenstein1';
       const response = await fetch(
-        `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`
+        `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`,
+        { signal: this.githubReposAbortController.signal }
       );
       if (!response.ok) {
         throw new Error(`GitHub API ${response.status}`);
@@ -345,7 +371,9 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     } catch {
       // GitHub unavailable — fallback to resume projects shown in template
     } finally {
+      globalThis.clearTimeout(timeoutId);
       this.githubReposLoading.set(false);
+      this.githubReposAbortController = null;
     }
   }
 
