@@ -29,7 +29,7 @@ export class InterviewMePage {
   readonly isLoading = signal(false);
   readonly isError = signal(false);
 
-  constructor(private readonly chatbot: ChatbotService) {}
+  constructor(private readonly chatbot: ChatbotService) { }
 
   canAsk(): boolean {
     return !this.isLoading() && this.question.trim().length > 0;

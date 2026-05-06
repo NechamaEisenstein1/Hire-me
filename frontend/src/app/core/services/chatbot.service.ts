@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 
-import { parseResumeFile } from '../../features/resume-studio/resume-parser';
 import { ApiService } from './api.service';
 
 type ChatResponse = {
@@ -20,7 +19,7 @@ type SupportedLanguage = 'he' | 'en';
 
 @Injectable({ providedIn: 'root' })
 export class ChatbotService {
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService) { }
 
   async ask(question: string): Promise<string> {
     const normalizedQuestion = question.trim();
@@ -77,30 +76,6 @@ export class ChatbotService {
   private async loadFallbackProfile(): Promise<ResumeProfileContext | null> {
     try {
       return await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
-    } catch {
-      // Continue to bundled CV fallback.
-    }
-
-    try {
-      const response = await fetch('/public/my-resume.pdf');
-      if (!response.ok) {
-        return null;
-      }
-
-      const blob = await response.blob();
-      const file = new File([blob], 'my-resume.pdf', {
-        type: blob.type || 'application/pdf'
-      });
-
-      const parsed = await parseResumeFile(file);
-      return {
-        name: parsed.name,
-        title: parsed.title,
-        summary: parsed.summary,
-        skills: parsed.skills,
-        education: parsed.education,
-        projects: parsed.projects
-      };
     } catch {
       return null;
     }

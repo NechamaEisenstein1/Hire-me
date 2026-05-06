@@ -30,7 +30,8 @@ async def register_resume_download() -> None:
 
 @router.get('/admin/today', response_model=TodayStatsResponse)
 async def get_admin_today_stats(
-    x_resume_owner_token: str | None = Header(default=None, alias='X-Resume-Owner-Token'),
+    x_resume_owner_token: str | None = Header(
+        default=None, alias='X-Resume-Owner-Token'),
 ) -> TodayStatsResponse:
     settings = get_settings()
     if not settings.resume_owner_token:
@@ -40,7 +41,8 @@ async def get_admin_today_stats(
         )
 
     if x_resume_owner_token != settings.resume_owner_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid owner token.')
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid owner token.')
 
     stats = get_today_stats()
     return TodayStatsResponse(**stats)
