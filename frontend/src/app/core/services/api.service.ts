@@ -15,6 +15,18 @@ type ErrorPayload = {
   detail?: string;
 };
 
+function hasResponseBody(response: Response): boolean {
+  if (response.status === 204 || response.status === 205) {
+    return false;
+  }
+  const contentLength = response.headers.get('content-length');
+  if (contentLength === '0') {
+    return false;
+  }
+  const contentType = response.headers.get('content-type');
+  return contentType !== null && contentType.length > 0;
+}
+
 async function toApiError(response: Response): Promise<ApiError> {
   let detail = `Request failed: ${response.status}`;
 
@@ -62,7 +74,7 @@ export class ApiService {
     if (!response.ok) {
       throw await toApiError(response);
     }
-    return (await response.json()) as T;
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
   }
 
   async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
@@ -80,7 +92,7 @@ export class ApiService {
     if (!response.ok) {
       throw await toApiError(response);
     }
-    return (await response.json()) as T;
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
   }
 
   async put<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
@@ -98,6 +110,6 @@ export class ApiService {
     if (!response.ok) {
       throw await toApiError(response);
     }
-    return (await response.json()) as T;
+    return (hasResponseBody(response) ? await response.json() : undefined) as T;
   }
 }

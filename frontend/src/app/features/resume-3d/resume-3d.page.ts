@@ -118,10 +118,7 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     if (this.handlePointerMove) {
       this.canvasHost.nativeElement.removeEventListener('pointermove', this.handlePointerMove);
     }
-    this.sceneMesh?.geometry.dispose();
-    if (Array.isArray(this.sceneMesh?.material)) {
-      this.sceneMesh?.material.forEach((material) => material.dispose());
-    }
+    // Dispose geometry and material once via their direct references.
     this.cardGeometry?.dispose();
     this.cardMaterial?.dispose();
     this.renderer?.dispose();

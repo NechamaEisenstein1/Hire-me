@@ -18,12 +18,12 @@ class TodayStatsResponse(BaseModel):
     resume_downloads_today: int
 
 
-@router.post('/visit', status_code=status.HTTP_204_NO_CONTENT)
+@router.post('/visit', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def register_visit() -> None:
     record_visit()
 
 
-@router.post('/resume-download', status_code=status.HTTP_204_NO_CONTENT)
+@router.post('/resume-download', status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def register_resume_download() -> None:
     record_resume_download()
 

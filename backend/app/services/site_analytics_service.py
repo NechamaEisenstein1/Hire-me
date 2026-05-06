@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -39,13 +41,13 @@ def _increment(bucket: str, *, settings: Settings | None = None) -> None:
     today_key = _today_key()
     current = int(data[bucket].get(today_key, 0))
     data[bucket][today_key] = current + 1
-    _write_analytics_data(data, resolved_settings)
+    _write_analytics_data_atomic(data, resolved_settings)
 
 
 def _read_analytics_data(settings: Settings) -> AnalyticsDocument:
     path = _resolve_analytics_path(settings)
     if not path.exists():
-        _write_analytics_data(_default_analytics_data(), settings)
+        _write_analytics_data_atomic(_default_analytics_data(), settings)
 
     try:
         payload = json.loads(path.read_text(encoding='utf-8'))
@@ -60,10 +62,28 @@ def _read_analytics_data(settings: Settings) -> AnalyticsDocument:
     }
 
 
-def _write_analytics_data(data: AnalyticsDocument, settings: Settings) -> None:
+def _write_analytics_data_atomic(data: AnalyticsDocument, settings: Settings) -> None:
+    """Write atomically: serialise to a temp file then rename over the target.
+
+    os.replace() is atomic on POSIX and best-effort on Windows (will fail if
+    the target is locked, but never produces a partial file).
+    """
     path = _resolve_analytics_path(settings)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+            fh.write(payload)
+        os.replace(tmp_path, path)
+    except Exception:
+        # Clean up the temp file if the rename fails.
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def _resolve_analytics_path(settings: Settings) -> Path:
@@ -77,6 +97,10 @@ def _resolve_analytics_path(settings: Settings) -> Path:
 
 def _today_key() -> str:
     return datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+
+def _default_analytics_data() -> AnalyticsDocument:
+    return {'visits_by_day': {}, 'resume_downloads_by_day': {}}
 
 
 def _default_analytics_data() -> AnalyticsDocument:

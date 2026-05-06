@@ -158,8 +158,9 @@ async function extractTextFromDocx(file: File): Promise<string> {
     .replace(/<w:tab\/>/g, ' ')
     .replace(/<w:br\/>/g, '\n')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/\n\s+/g, '\n')
+    .replace(/[^\S\n]+/g, ' ')     // collapse spaces/tabs but preserve newlines
+    .replace(/\n[ \t]+/g, '\n')    // trim leading whitespace from each line
+    .replace(/\n{3,}/g, '\n\n')    // collapse 3+ blank lines to 2
     .trim();
 }
 

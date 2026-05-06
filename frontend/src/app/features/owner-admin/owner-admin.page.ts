@@ -113,7 +113,7 @@ export class OwnerAdminPage {
   private static readonly ownerTokenStorageKey = 'resume-owner-token';
 
   readonly now = new Date();
-  readonly ownerTokenInput = signal(globalThis.localStorage.getItem(OwnerAdminPage.ownerTokenStorageKey) ?? '');
+  readonly ownerTokenInput = signal(globalThis.sessionStorage.getItem(OwnerAdminPage.ownerTokenStorageKey) ?? '');
   readonly ownerUnlocked = signal(false);
   readonly isVerifyingOwner = signal(false);
   readonly isPublishing = signal(false);
@@ -136,7 +136,7 @@ export class OwnerAdminPage {
         headers: { 'X-Resume-Owner-Token': token }
       });
       this.ownerUnlocked.set(true);
-      globalThis.localStorage.setItem(OwnerAdminPage.ownerTokenStorageKey, token);
+      globalThis.sessionStorage.setItem(OwnerAdminPage.ownerTokenStorageKey, token);
       this.statusMessage.set('Admin unlocked successfully.');
       await this.refreshTodayStats();
     } catch (error: unknown) {
