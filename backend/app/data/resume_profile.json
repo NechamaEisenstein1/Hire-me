@@ -1,45 +1,89 @@
 {
   "name": "Nechama Eisenstein",
-  "title": "Full Stack Engineer",
-  "location": "Israel",
-  "email": "nechama@example.com",
+  "title": "Software Engineer",
+  "location": "Location",
+  "email": "np3250839@gmail.com",
   "githubUsername": "NechamaEisenstein1",
-  "summary": "Product-minded full stack engineer focused on robust backend architecture, UX-forward frontend delivery, and production readiness.",
+  "summary": "Quick understanding ,excellent self - study ability, high work ethic, highly motivated and excellent human relations.",
   "skills": [
     "Angular",
     "TypeScript",
+    "JavaScript",
     "Python",
-    "FastAPI",
-    "PostgreSQL",
-    "Docker",
-    "AWS",
-    "GraphQL",
-    "WebSockets"
+    "Jinja2",
+    "Web Components",
+    "PatternFly",
+    "HTML",
+    "CSS",
+    "C#",
+    "React",
+    "Node.js",
+    "OpenShift",
+    "JSON Data Modeling",
+    "REST APIs",
+    "GitHub",
+    "Pull Requests",
+    "Code Reviews",
+    "Software Architecture",
+    "Modular Design",
+    "Template Inheritance",
+    "Macros",
+    "Data Structures",
+    "Algorithms",
+    "Databases",
+    "Operating Systems",
+    "Software Engineering",
+    "AI Integration",
+    "LLM Applications",
+    "Problem Solving",
+    "Fast Learning",
+    "Team Collaboration",
+    "Technical Documentation"
   ],
   "experience": [
     {
-      "role": "Full Stack Engineer",
-      "company": "Personal Portfolio Product",
-      "period": "2025 - Present",
+      "role": "Software Development Practicum",
+      "company": "Red Hat - Pendrive Team",
+      "period": "2025-2026",
       "highlights": [
-        "Built a fullstack CV platform with Angular, FastAPI, and realtime visitor telemetry.",
-        "Implemented AI interview assistant with strict context grounding to portfolio and resume data.",
-        "Designed production-ready infrastructure path with Terraform and containerized deployment flow."
+        "Implemented a user-friendly HTML report generator aligned with Red Hat design standards, replacing a basic existing solution.",
+        "Designed a modular architecture separating logic from HTML using Python objects, Jinja2 templates, macros, and template inheritance to keep code clean and reusable.",
+        "Developed a Python adapter that converts rule-result JSON into structured models, supporting multiple rule types and consistent analysis across diagnostic sessions.",
+        "Built an offline diagnostic report UI using Web Components and PatternFly (Red Hat design system).",
+        "Implemented a Python workflow that processes JSON inputs and generates structured HTML reports used by Red Hat teams and customers in production environments.",
+        "Collaborated through GitHub-based development, including pull requests and code reviews by experienced Red Hat engineers."
+      ]
+    },
+    {
+      "role": "Data and Case Coordination",
+      "company": "Jerusalem Municipality - Education Department",
+      "period": "2022-2026",
+      "highlights": [
+        "Managed large educational datasets to support placement decisions.",
+        "Collaborated with ministries, principals, and parents on complex student cases.",
+        "Ensured compliance with municipal and regulatory documentation standards."
       ]
     }
   ],
   "projects": [
     {
-      "name": "Hire Me Platform",
-      "summary": "Interactive CV website with Resume Studio, AI interview assistant, 3D resume showcase, and live visitor counter.",
-      "stack": ["Angular", "FastAPI", "PostgreSQL", "Terraform", "Docker"]
+      "name": "Projects are synced from GitHub",
+      "summary": "Resume Studio now loads project cards directly from the GitHub account.",
+      "stack": [
+        "GitHub API"
+      ]
     }
   ],
   "education": [
     {
-      "degree": "B.Sc. Computer Science",
-      "school": "University",
-      "period": "2019 - 2023"
+      "degree": "Advanced Diploma in Software Engineering (Graduated with honors, Average: 96)",
+      "school": "Institute for Technological Training (MAHAT), Jerusalem. Core studies: advanced computer science at an academic level. Additional courses: Algorithms, Databases, Data Structures, Operating Systems, Software Engineering.",
+      "period": "2023-2026"
+    },
+    {
+      "degree": "Automation and AI Systems",
+      "school": "Kedem Campus",
+      "period": "2025"
     }
   ]
 }

@@ -129,7 +129,7 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
       const canvas = document.createElement('canvas');
       return Boolean(
         canvas.getContext('webgl') ||
-          canvas.getContext('experimental-webgl')
+        canvas.getContext('experimental-webgl')
       );
     } catch {
       return false;

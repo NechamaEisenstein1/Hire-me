@@ -17,19 +17,19 @@ export class AppShellStore {
 
   /** In-page section anchors displayed as the primary nav. */
   readonly sectionLinks: ReadonlyArray<SectionLink> = [
-    { label: 'About',      fragment: 'about'      },
-    { label: 'Skills',     fragment: 'skills'     },
-    { label: 'Projects',   fragment: 'projects'   },
+    { label: 'About', fragment: 'about' },
+    { label: 'Skills', fragment: 'skills' },
+    { label: 'Projects', fragment: 'projects' },
     { label: 'Experience', fragment: 'experience' },
-    { label: 'Resume',     fragment: 'resume'     },
-    { label: 'Contact',    fragment: 'contact'    },
+    { label: 'Resume', fragment: 'resume' },
+    { label: 'Contact', fragment: 'contact' },
   ];
 
   /** Secondary routes for advanced features, shown in sidenav and desktop utility area. */
   readonly featureLinks: ReadonlyArray<FeatureLink> = [
-    { path: '/interview-me',  label: 'Interview Me'  },
+    { path: '/interview-me', label: 'Interview Me' },
     { path: '/resume-studio', label: 'Resume Studio' },
-    { path: '/resume-3d',     label: '3D Resume'     },
+    { path: '/resume-3d', label: '3D Resume' },
   ];
 
   /** Candidate display name, updated after the resume profile loads. */

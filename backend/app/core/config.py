@@ -5,14 +5,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     app_name: str = "Hire Me"
     app_env: str = "development"
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
 
-    app_secret_key: str = ""  # Required: must be set via APP_SECRET_KEY environment variable
+    # Required: must be set via APP_SECRET_KEY environment variable
+    app_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     jwt_access_token_expires_minutes: int = 30
     jwt_refresh_token_expires_days: int = 30
@@ -68,7 +70,8 @@ class Settings(BaseSettings):
     def validate_ai_timeout(cls, value: float | str) -> float:
         timeout = float(value)
         if timeout <= 0:
-            raise ValueError("AI_REQUEST_TIMEOUT_SECONDS must be greater than 0.")
+            raise ValueError(
+                "AI_REQUEST_TIMEOUT_SECONDS must be greater than 0.")
         return timeout
 
     @field_validator("app_secret_key", mode="before")

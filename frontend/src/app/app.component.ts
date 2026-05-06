@@ -24,7 +24,7 @@ import { AppShellStore } from './core/stores/app-shell.store';
   ],
   template: `
     <!-- ── Sticky portfolio header (outside sidenav-container so window-level sticky works) ── -->
-    <header class="sticky top-0 z-20 border-b border-brand-200/60 bg-white/90 backdrop-blur-md dark:border-brand-800/60 dark:bg-brand-900/85">
+    <header class="fixed inset-x-0 top-0 z-50 border-b border-brand-200/60 bg-white/90 backdrop-blur-md dark:border-brand-800/60 dark:bg-brand-900/85">
       <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-8">
 
         <!-- Hamburger (mobile only) -->
@@ -91,7 +91,7 @@ import { AppShellStore } from './core/stores/app-shell.store';
       </div>
     </header>
 
-    <mat-sidenav-container class="min-h-screen bg-transparent">
+    <mat-sidenav-container class="min-h-screen bg-transparent pt-16 md:pt-[72px]">
 
       <!-- ── Mobile sidenav ── -->
       <mat-sidenav

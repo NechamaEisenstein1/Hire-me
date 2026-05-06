@@ -26,8 +26,8 @@ def get_today_stats(*, settings: Settings | None = None) -> dict[str, int]:
     today_key = _today_key()
 
     return {
-      'visitors_today': int(data.get('visits_by_day', {}).get(today_key, 0)),
-      'resume_downloads_today': int(data.get('resume_downloads_by_day', {}).get(today_key, 0)),
+        'visitors_today': int(data.get('visits_by_day', {}).get(today_key, 0)),
+        'resume_downloads_today': int(data.get('resume_downloads_by_day', {}).get(today_key, 0)),
     }
 
 

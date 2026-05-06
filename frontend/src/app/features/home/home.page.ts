@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { ApiService } from '../../core/services/api.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
-import { ParsedResume, parseResumeFile } from '../resume-studio/resume-parser';
+import { ParsedResume } from '../resume-studio/resume-parser';
 
 type GitHubRepo = {
   id: number;
@@ -70,6 +70,14 @@ type GitHubRepo = {
             class="rounded-xl border border-brand-400 px-7 py-3.5 text-sm font-semibold no-underline transition hover:bg-brand-100 dark:border-brand-600 dark:hover:bg-brand-800/60"
           >
             Interview Me →
+          </a>
+        </div>
+        <div class="mt-4">
+          <a
+            routerLink="/owner-admin"
+            class="rounded-lg border border-brand-300 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] no-underline opacity-70 transition hover:bg-brand-100 hover:opacity-100 dark:border-brand-700 dark:hover:bg-brand-800/60"
+          >
+            Owner Panel
           </a>
         </div>
       } @else {
@@ -382,21 +390,6 @@ export class HomePage implements OnInit, AfterViewInit, AfterViewChecked, OnDest
       const data = await this.api.get<ParsedResume>('/api/v1/resume-profile');
       this.profile.set(data);
       this.shellStore.setCandidateName(data.name);
-      return;
-    } catch {
-      // Fall through to bundled PDF fallback.
-    }
-
-    try {
-      const response = await fetch('/public/my-resume.pdf');
-      if (!response.ok) {
-        throw new Error('Resume PDF unavailable.');
-      }
-      const blob = await response.blob();
-      const file = new File([blob], 'my-resume.pdf', { type: blob.type || 'application/pdf' });
-      const parsed = await parseResumeFile(file);
-      this.profile.set(parsed);
-      this.shellStore.setCandidateName(parsed.name);
     } catch {
       this.loadingMessage.set('Profile is temporarily unavailable.');
     }
