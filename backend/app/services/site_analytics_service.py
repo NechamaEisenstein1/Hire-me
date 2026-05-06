@@ -101,10 +101,3 @@ def _today_key() -> str:
 
 def _default_analytics_data() -> AnalyticsDocument:
     return {'visits_by_day': {}, 'resume_downloads_by_day': {}}
-
-
-def _default_analytics_data() -> AnalyticsDocument:
-    return {
-        'visits_by_day': {},
-        'resume_downloads_by_day': {},
-    }
