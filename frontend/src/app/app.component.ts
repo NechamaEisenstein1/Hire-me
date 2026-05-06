@@ -23,6 +23,74 @@ import { AppShellStore } from './core/stores/app-shell.store';
     MatSidenavModule,
   ],
   template: `
+    <!-- ── Sticky portfolio header (outside sidenav-container so window-level sticky works) ── -->
+    <header class="sticky top-0 z-20 border-b border-brand-200/60 bg-white/90 backdrop-blur-md dark:border-brand-800/60 dark:bg-brand-900/85">
+      <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-8">
+
+        <!-- Hamburger (mobile only) -->
+        <button
+          mat-icon-button
+          class="md:hidden"
+          (click)="shellStore.openSidenav()"
+          aria-label="Open navigation menu"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+
+        <!-- Candidate name / home link -->
+        <a
+          routerLink="/"
+          class="mr-4 shrink-0 text-base font-bold tracking-tight no-underline md:mr-6 md:text-lg"
+        >
+          {{ shellStore.candidateName() }}
+        </a>
+
+        <!-- Section anchor links (desktop only) -->
+        <nav class="hidden items-center gap-0.5 md:flex" aria-label="Portfolio sections">
+          @for (link of shellStore.sectionLinks; track link.fragment) {
+            <a
+              routerLink="/"
+              [fragment]="link.fragment"
+              class="relative rounded-lg px-3 py-1.5 text-sm no-underline transition-all duration-200"
+              [class.font-semibold]="shellStore.activeSection() === link.fragment"
+              [class.text-brand-600]="shellStore.activeSection() === link.fragment"
+              [class.dark:text-brand-400]="shellStore.activeSection() === link.fragment"
+              [class.opacity-100]="shellStore.activeSection() === link.fragment"
+              [class.font-medium]="shellStore.activeSection() !== link.fragment"
+              [class.opacity-50]="shellStore.activeSection() !== link.fragment"
+              [class.hover:opacity-100]="shellStore.activeSection() !== link.fragment"
+            >
+              {{ link.label }}
+              @if (shellStore.activeSection() === link.fragment) {
+                <span class="absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-brand-500" aria-hidden="true"></span>
+              }
+            </a>
+          }
+        </nav>
+
+        <span class="flex-1" aria-hidden="true"></span>
+
+        <!-- Interview Me CTA (desktop) -->
+        <a
+          routerLink="/interview-me"
+          mat-stroked-button
+          class="hidden text-sm md:inline-flex"
+        >
+          Interview Me
+        </a>
+
+        <!-- Theme toggle -->
+        <button
+          mat-icon-button
+          (click)="shellStore.toggleTheme()"
+          [attr.aria-label]="shellStore.themeLabel() + ' mode'"
+        >
+          <mat-icon>{{ shellStore.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+        </button>
+
+      </div>
+    </header>
+
     <mat-sidenav-container class="min-h-screen bg-transparent">
 
       <!-- ── Mobile sidenav ── -->
@@ -73,64 +141,6 @@ import { AppShellStore } from './core/stores/app-shell.store';
       </mat-sidenav>
 
       <mat-sidenav-content>
-
-        <!-- ── Sticky portfolio header ── -->
-        <header class="sticky top-0 z-20 border-b border-brand-200/60 bg-white/90 backdrop-blur-md dark:border-brand-800/60 dark:bg-brand-900/85">
-          <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 md:px-8">
-
-            <!-- Hamburger (mobile only) -->
-            <button
-              mat-icon-button
-              class="md:hidden"
-              (click)="shellStore.openSidenav()"
-              aria-label="Open navigation menu"
-            >
-              <mat-icon>menu</mat-icon>
-            </button>
-
-            <!-- Candidate name / home link -->
-            <a
-              routerLink="/"
-              class="mr-4 shrink-0 text-base font-bold tracking-tight no-underline md:mr-6 md:text-lg"
-            >
-              {{ shellStore.candidateName() }}
-            </a>
-
-            <!-- Section anchor links (desktop only) -->
-            <nav class="hidden items-center gap-0.5 md:flex" aria-label="Portfolio sections">
-              @for (link of shellStore.sectionLinks; track link.fragment) {
-                <a
-                  routerLink="/"
-                  [fragment]="link.fragment"
-                  class="rounded-lg px-3 py-1.5 text-sm font-medium opacity-60 transition-opacity duration-150 no-underline hover:opacity-100 dark:opacity-50 dark:hover:opacity-90"
-                >
-                  {{ link.label }}
-                </a>
-              }
-            </nav>
-
-            <span class="flex-1" aria-hidden="true"></span>
-
-            <!-- Interview Me CTA (desktop) -->
-            <a
-              routerLink="/interview-me"
-              mat-stroked-button
-              class="hidden text-sm md:inline-flex"
-            >
-              Interview Me
-            </a>
-
-            <!-- Theme toggle -->
-            <button
-              mat-icon-button
-              (click)="shellStore.toggleTheme()"
-              [attr.aria-label]="shellStore.themeLabel() + ' mode'"
-            >
-              <mat-icon>{{ shellStore.darkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
-            </button>
-
-          </div>
-        </header>
 
         <!-- Page content — each page component manages its own layout -->
         <main>

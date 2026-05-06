@@ -38,6 +38,7 @@ export class AppShellStore {
   readonly darkMode = signal(this.getInitialDarkMode());
   readonly sidenavOpened = signal(false);
   readonly isOnline = signal(globalThis.navigator?.onLine ?? true);
+  readonly activeSection = signal<string>('about');
   readonly themeLabel = computed(() => (this.darkMode() ? 'Dark' : 'Light'));
 
   constructor() {
@@ -50,6 +51,10 @@ export class AppShellStore {
     if (name?.trim()) {
       this.candidateName.set(name.trim());
     }
+  }
+
+  setActiveSection(fragment: string): void {
+    this.activeSection.set(fragment);
   }
 
   toggleTheme(): void {
