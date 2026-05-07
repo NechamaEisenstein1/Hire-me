@@ -67,10 +67,27 @@
   ],
   "projects": [
     {
-      "name": "Projects are synced from GitHub",
-      "summary": "Resume Studio now loads project cards directly from the GitHub account.",
+      "name": "Hire Me",
+      "summary": "Production-ready fullstack portfolio platform with an AI interview chatbot, live visitor analytics, resume management, and a 3D resume viewer. Backend exposes REST and GraphQL APIs with JWT auth, rate limiting, and WebSocket support. Frontend is a PWA with Three.js 3D scenes and GSAP animations.",
       "stack": [
-        "GitHub API"
+        "Python",
+        "FastAPI",
+        "SQLAlchemy (async)",
+        "Alembic",
+        "PostgreSQL",
+        "Strawberry GraphQL",
+        "httpx",
+        "Gemini API",
+        "Angular 18",
+        "TypeScript",
+        "TailwindCSS",
+        "Angular Material",
+        "Three.js",
+        "GSAP",
+        "RxJS",
+        "Docker",
+        "Terraform",
+        "AWS"
       ]
     }
   ],

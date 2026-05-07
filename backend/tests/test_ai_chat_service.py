@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from app.core.config import Settings
+from app.services import ai_chat_service
 from app.services.ai_chat_service import (
     AIProviderResponseError,
     AIServiceConfigurationError,
@@ -114,5 +115,49 @@ def test_answer_interview_question_requires_gemini_api_key() -> None:
         async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
             with pytest.raises(AIServiceConfigurationError, match="GEMINI_API_KEY"):
                 await answer_interview_question("Hello", settings=settings, client=client)
+
+    asyncio.run(run_test())
+
+
+def test_answer_interview_question_retries_transient_gemini_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    settings = build_settings()
+    attempts = 0
+
+    async def no_sleep(_: float) -> None:
+        return None
+
+    monkeypatch.setattr(ai_chat_service.asyncio, "sleep", no_sleep)
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+
+        if attempts == 1:
+            return httpx.Response(503, json={"error": {"message": "busy"}})
+
+        return httpx.Response(
+            200,
+            json={
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [{"text": "Recovered answer"}]
+                        }
+                    }
+                ]
+            },
+        )
+
+    async def run_test() -> None:
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport) as client:
+            answer = await answer_interview_question(
+                "Tell me about your strengths.",
+                settings=settings,
+                client=client,
+            )
+
+        assert answer == "Recovered answer"
+        assert attempts == 2
 
     asyncio.run(run_test())

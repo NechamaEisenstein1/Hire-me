@@ -37,9 +37,11 @@ hire-me/
 
 Use `.env` (workspace root) for local runtime configuration.
 
-Required AI variables:
+Minimum required local variables:
 
 ```env
+APP_SECRET_KEY=replace-with-strong-secret
+DATABASE_URL=sqlite+aiosqlite:///./hire_me_local.db
 AI_PROVIDER=gemini
 GEMINI_BASE_URL=https://generativelanguage.googleapis.com
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY
@@ -50,6 +52,9 @@ AI_VERIFY_TLS=true
 
 Notes:
 
+- `APP_SECRET_KEY` is mandatory even for local dev.
+- The default local `.env.example` uses SQLite so `python run_backend.py` works without Docker.
+- If you want PostgreSQL locally instead, set `DATABASE_URL` to your local instance explicitly.
 - `AI_PROVIDER` must be `gemini`.
 - Recommended model: `gemini-2.5-flash`.
 - Rotate keys regularly and never commit real keys.
@@ -63,6 +68,8 @@ From workspace root:
 ```powershell
 python run_backend.py
 ```
+
+This command expects `.env` in the workspace root. Copy from `.env.example` and fill in at least `APP_SECRET_KEY` and `GEMINI_API_KEY`.
 
 Backend runs on:
 
@@ -120,6 +127,8 @@ If Gemini returns 429:
 ## Docker Compose
 
 `docker-compose.yml` is aligned to Gemini-only backend env wiring.
+
+For Docker Compose, keep using a PostgreSQL `DATABASE_URL` that points at the compose service, for example `postgresql+asyncpg://hire_me:hire_me_password@postgres:5432/hire_me`.
 
 Start services:
 

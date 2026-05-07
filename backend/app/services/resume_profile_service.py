@@ -32,13 +32,16 @@ def build_resume_profile_context(profile: dict[str, Any]) -> str:
     skills = _as_list(profile.get("skills"))
     projects = _as_list(profile.get("projects"))
     education = _as_list(profile.get("education"))
+    experience = _as_list(profile.get("experience"))
 
     project_summaries: list[str] = []
-    for item in projects[:4]:
+    for item in projects[:6]:
         if isinstance(item, dict):
             name = str(item.get("name", "Project")).strip()
             summary = str(item.get("summary", "")).strip()
-            project_summaries.append(f"- {name}: {summary}")
+            stack = _as_list(item.get("stack"))
+            stack_str = f" (stack: {', '.join(str(s) for s in stack)})" if stack else ""
+            project_summaries.append(f"- {name}: {summary}{stack_str}")
 
     education_summaries: list[str] = []
     for item in education[:3]:
@@ -47,12 +50,24 @@ def build_resume_profile_context(profile: dict[str, Any]) -> str:
             school = str(item.get("school", "School")).strip()
             education_summaries.append(f"- {degree}, {school}")
 
+    experience_summaries: list[str] = []
+    for item in experience[:4]:
+        if isinstance(item, dict):
+            role = str(item.get("role", "Role")).strip()
+            company = str(item.get("company", "Company")).strip()
+            period = str(item.get("period", "")).strip()
+            highlights = _as_list(item.get("highlights"))
+            highlights_str = "; ".join(str(h) for h in highlights[:3])
+            experience_summaries.append(f"- {role} at {company} ({period}): {highlights_str}")
+
     return (
-        "Candidate profile context (source of truth):\n"
+        "My professional profile (answer in first person; only use facts explicitly stated here — never invent details):\n"
         f"Name: {profile.get('name', 'Unknown')}\n"
         f"Title: {profile.get('title', 'Unknown')}\n"
         f"Summary: {profile.get('summary', '')}\n"
-        f"Skills: {', '.join(str(skill) for skill in skills[:20])}\n"
+        f"Skills: {', '.join(str(skill) for skill in skills[:30])}\n"
+        "Experience:\n"
+        f"{chr(10).join(experience_summaries) if experience_summaries else '- None provided'}\n"
         "Projects:\n"
         f"{chr(10).join(project_summaries) if project_summaries else '- None provided'}\n"
         "Education:\n"

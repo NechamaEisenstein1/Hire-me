@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import httpx
@@ -7,6 +8,8 @@ import httpx
 from app.core.config import Settings, get_settings
 
 GEMINI_GENERATE_CONTENT_PATH_TEMPLATE = "/v1beta/models/{model}:generateContent"
+GEMINI_RETRYABLE_STATUS_CODES = {429, 503}
+GEMINI_MAX_ATTEMPTS = 3
 
 
 class AIServiceError(Exception):
@@ -124,15 +127,30 @@ async def _request_gemini_answer(
         "Content-Type": "application/json",
     }
 
-    try:
-        response = await client.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        raise AIProviderResponseError(
-            f"Gemini returned HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.RequestError as exc:
-        raise AIProviderRequestError("Unable to reach Gemini.") from exc
+    response: httpx.Response | None = None
+    for attempt in range(1, GEMINI_MAX_ATTEMPTS + 1):
+        try:
+            response = await client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            break
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            if status_code in GEMINI_RETRYABLE_STATUS_CODES and attempt < GEMINI_MAX_ATTEMPTS:
+                await asyncio.sleep(0.5 * attempt)
+                continue
+
+            raise AIProviderResponseError(
+                f"Gemini returned HTTP {status_code}."
+            ) from exc
+        except httpx.RequestError as exc:
+            if attempt < GEMINI_MAX_ATTEMPTS:
+                await asyncio.sleep(0.5 * attempt)
+                continue
+
+            raise AIProviderRequestError("Unable to reach Gemini.") from exc
+
+    if response is None:
+        raise AIProviderRequestError("Unable to reach Gemini.")
 
     try:
         body = response.json()
