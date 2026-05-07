@@ -153,7 +153,7 @@ export class ChatbotService {
       : 'I am happy to help. In this interview space, I answer only questions related to my fit for the role, my experience, my projects, and my resume. This question currently seems outside that scope. If you meant it in a professional or hiring context, I would be glad if you rephrased it.';
   }
 
-  private isCareerRelevantQuestion(question: string, profile: ResumeProfileContext): boolean {
+  private isCareerRelevantQuestion(question: string, _profile: ResumeProfileContext): boolean {
     const normalizedQuestion = question.toLowerCase();
 
     // In this interview chat, default to professional relevance unless a question is clearly unrelated.
@@ -166,43 +166,7 @@ export class ChatbotService {
       return false;
     }
 
-    const relevantTerms = [
-      'experience', 'project', 'projects', 'skill', 'skills', 'technology', 'tech', 'stack',
-      'architecture', 'system', 'delivery', 'team', 'role', 'job', 'work', 'fit', 'resume', 'cv',
-      'education', 'degree', 'university', 'backend', 'frontend', 'full stack', 'aws', 'cloud',
-      'strength', 'strengths', 'strong', 'background', 'career', 'worked', 'work history',
-      'company', 'companies', 'employment', 'previous role', 'previous roles',
-      'about you', 'about your', 'yourself',
-      'ניסיון', 'פרויקט', 'פרויקטים', 'טכנולוג', 'ארכיטקטורה', 'מערכת', 'משרה', 'תפקיד', 'עבודה',
-      'התאמה', 'קורות', 'חיים', 'השכלה', 'לימודים', 'פיתוח', 'מפתחת', 'בקאנד', 'פרונט', 'ענן',
-      'חוזקה', 'חוזקות', 'יתרון', 'יתרונות', 'רקע', 'איפה עבדת', 'עבדת', 'עבדתי', 'חברה', 'חברות',
-      'ניסיון קודם', 'ניסיון תעסוקתי', 'ספרי על עצמך', 'ספר על עצמך', 'עלייך', 'עליך', 'שלך'
-    ];
-
-    if (relevantTerms.some((term) => normalizedQuestion.includes(term))) {
-      return true;
-    }
-
-    // Questions directed at the candidate are usually interview-relevant.
-    if (/(\byour\b|\byou\b|\babout\s+you\b|את|אתה|עלייך|עליך|שלך)/.test(normalizedQuestion)) {
-      return true;
-    }
-
-    const profileTerms = [
-      profile.name,
-      profile.title,
-      ...profile.skills,
-      ...profile.projects.map((project) => project.name),
-      ...profile.education.flatMap((item) => [item.degree, item.school])
-    ]
-      .map((item) => item.toLowerCase().trim())
-      .filter((item) => item.length >= 3);
-
-    if (profileTerms.some((term) => normalizedQuestion.includes(term))) {
-      return true;
-    }
-
-    // Prefer answering rather than incorrectly rejecting interview questions.
+    // In interview mode, default to relevant unless clearly unrelated.
     return true;
   }
 }

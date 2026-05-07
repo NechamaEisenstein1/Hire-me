@@ -38,7 +38,7 @@ services:
       AI_PROVIDER: ${AI_PROVIDER:-gemini}
       GEMINI_BASE_URL: ${GEMINI_BASE_URL:-https://generativelanguage.googleapis.com}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       AI_VERIFY_TLS: ${AI_VERIFY_TLS:-true}
     ports:
       - "8000:8000"

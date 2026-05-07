@@ -19,7 +19,7 @@ def build_settings(**overrides: object) -> Settings:
         "database_url": "postgresql+asyncpg://user:pass@localhost:5432/hire_me_test",
         "ai_provider": "gemini",
         "gemini_api_key": "gemini-test-key",
-        "gemini_model": "gemini-2.0-flash",
+        "gemini_model": "gemini-2.5-flash",
         "gemini_base_url": "https://generativelanguage.googleapis.com",
         "ai_request_timeout_seconds": 5,
         "ai_system_prompt": "Test system prompt.",
@@ -69,9 +69,10 @@ def test_answer_interview_question_uses_gemini_generate_content_api() -> None:
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
-        assert str(request.url).startswith(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="
+        assert str(request.url) == (
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         )
+        assert request.headers["x-goog-api-key"] == "gemini-test-key"
 
         payload = json.loads(request.content.decode())
         assert payload["generationConfig"]["temperature"] == 0.2

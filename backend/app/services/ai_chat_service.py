@@ -99,7 +99,7 @@ async def _request_gemini_answer(
         )
 
     path = GEMINI_GENERATE_CONTENT_PATH_TEMPLATE.format(model=model)
-    url = f"{settings.gemini_base_url.rstrip('/')}{path}?key={settings.gemini_api_key}"
+    url = f"{settings.gemini_base_url.rstrip('/')}{path}"
 
     user_prompt = question.strip()
     if profile_context.strip():
@@ -119,8 +119,13 @@ async def _request_gemini_answer(
         },
     }
 
+    headers = {
+        "x-goog-api-key": settings.gemini_api_key,
+        "Content-Type": "application/json",
+    }
+
     try:
-        response = await client.post(url, json=payload)
+        response = await client.post(url, headers=headers, json=payload)
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         raise AIProviderResponseError(

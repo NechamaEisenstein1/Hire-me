@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     ai_provider: str = "gemini"
     gemini_base_url: str = "https://generativelanguage.googleapis.com"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
     ai_request_timeout_seconds: float = 30.0
     ai_verify_tls: bool = True
     resume_owner_token: str = ""

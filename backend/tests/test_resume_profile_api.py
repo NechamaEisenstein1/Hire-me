@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 from unittest.mock import patch
+from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
@@ -9,7 +10,7 @@ from app.api.rest.resume_profile import router
 
 
 @pytest.fixture
-async def async_client() -> httpx.AsyncClient:
+async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
     app = FastAPI()
     app.include_router(router)
     transport = httpx.ASGITransport(app=app)
