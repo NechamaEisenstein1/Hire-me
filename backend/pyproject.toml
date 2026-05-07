@@ -36,6 +36,7 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+anyio_backend = "asyncio"
 
 [build-system]
 requires = ["poetry-core>=1.9.0"]

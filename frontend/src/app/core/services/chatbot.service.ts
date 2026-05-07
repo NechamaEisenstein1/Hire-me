@@ -24,25 +24,7 @@ export class ChatbotService {
   async ask(question: string): Promise<string> {
     const normalizedQuestion = question.trim();
     const language = this.detectLanguage(normalizedQuestion);
-    let scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
-
-    try {
-      const profile = await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
-      scopedQuestion = `${scopedQuestion}\n\nCandidate profile context:\n${JSON.stringify(
-        {
-          name: profile.name,
-          title: profile.title,
-          summary: profile.summary,
-          skills: profile.skills,
-          education: profile.education,
-          projects: profile.projects
-        },
-        null,
-        2
-      )}`;
-    } catch {
-      // If profile context is unavailable, continue with strict guardrails only.
-    }
+    const scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
 
     try {
       const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
@@ -57,7 +39,6 @@ export class ChatbotService {
 
   private buildGuardedQuestion(question: string): string {
     const language = this.detectLanguage(question);
-    const refusalMessage = this.buildOutOfScopeReply(language);
 
     return [
       'You are the candidate herself. Answer in first person singular.',
@@ -67,7 +48,7 @@ export class ChatbotService {
       'Answer only about job fit, resume evidence, professional experience, education, skills, projects, portfolio implementation, architecture decisions, and delivery practices that are actually evidenced by the profile and site.',
       'Be accurate, persuasive, and professional, but do not invent facts or experience.',
       'If information is missing, say that clearly instead of guessing.',
-      `If the question is outside this scope, reply with this exact message: ${refusalMessage}`,
+      'If and only if the question is clearly unrelated to my professional profile, briefly redirect it back to interview-relevant topics.',
       '',
       `Recruiter question: ${question.trim()}`
     ].join('\n');
@@ -174,15 +155,36 @@ export class ChatbotService {
 
   private isCareerRelevantQuestion(question: string, profile: ResumeProfileContext): boolean {
     const normalizedQuestion = question.toLowerCase();
+
+    // In this interview chat, default to professional relevance unless a question is clearly unrelated.
+    const clearlyUnrelatedTerms = [
+      'weather', 'recipe', 'movie', 'sports score', 'horoscope', 'celebrity gossip',
+      'מזג אוויר', 'מתכון', 'סרט', 'תוצאה של משחק', 'רכילות'
+    ];
+
+    if (clearlyUnrelatedTerms.some((term) => normalizedQuestion.includes(term))) {
+      return false;
+    }
+
     const relevantTerms = [
       'experience', 'project', 'projects', 'skill', 'skills', 'technology', 'tech', 'stack',
       'architecture', 'system', 'delivery', 'team', 'role', 'job', 'work', 'fit', 'resume', 'cv',
       'education', 'degree', 'university', 'backend', 'frontend', 'full stack', 'aws', 'cloud',
+      'strength', 'strengths', 'strong', 'background', 'career', 'worked', 'work history',
+      'company', 'companies', 'employment', 'previous role', 'previous roles',
+      'about you', 'about your', 'yourself',
       'ניסיון', 'פרויקט', 'פרויקטים', 'טכנולוג', 'ארכיטקטורה', 'מערכת', 'משרה', 'תפקיד', 'עבודה',
-      'התאמה', 'קורות', 'חיים', 'השכלה', 'לימודים', 'פיתוח', 'מפתחת', 'בקאנד', 'פרונט', 'ענן'
+      'התאמה', 'קורות', 'חיים', 'השכלה', 'לימודים', 'פיתוח', 'מפתחת', 'בקאנד', 'פרונט', 'ענן',
+      'חוזקה', 'חוזקות', 'יתרון', 'יתרונות', 'רקע', 'איפה עבדת', 'עבדת', 'עבדתי', 'חברה', 'חברות',
+      'ניסיון קודם', 'ניסיון תעסוקתי', 'ספרי על עצמך', 'ספר על עצמך', 'עלייך', 'עליך', 'שלך'
     ];
 
     if (relevantTerms.some((term) => normalizedQuestion.includes(term))) {
+      return true;
+    }
+
+    // Questions directed at the candidate are usually interview-relevant.
+    if (/(\byour\b|\byou\b|\babout\s+you\b|את|אתה|עלייך|עליך|שלך)/.test(normalizedQuestion)) {
       return true;
     }
 
@@ -196,6 +198,11 @@ export class ChatbotService {
       .map((item) => item.toLowerCase().trim())
       .filter((item) => item.length >= 3);
 
-    return profileTerms.some((term) => normalizedQuestion.includes(term));
+    if (profileTerms.some((term) => normalizedQuestion.includes(term))) {
+      return true;
+    }
+
+    // Prefer answering rather than incorrectly rejecting interview questions.
+    return true;
   }
 }

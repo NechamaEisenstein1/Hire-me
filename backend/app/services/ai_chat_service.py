@@ -6,8 +6,7 @@ import httpx
 
 from app.core.config import Settings, get_settings
 
-GROQ_CHAT_COMPLETIONS_PATH = "/openai/v1/chat/completions"
-OLLAMA_CHAT_PATH = "/api/chat"
+GEMINI_GENERATE_CONTENT_PATH_TEMPLATE = "/v1beta/models/{model}:generateContent"
 
 
 class AIServiceError(Exception):
@@ -81,78 +80,43 @@ def _build_client(settings: Settings) -> httpx.AsyncClient:
     )
 
 
-async def _request_groq_answer(
+async def _request_gemini_answer(
     question: str,
     settings: Settings,
     client: httpx.AsyncClient,
     *,
     profile_context: str = "",
 ) -> str:
-    if not settings.groq_api_key:
+    if not settings.gemini_api_key:
         raise AIServiceConfigurationError(
-            "GROQ_API_KEY must be configured when AI_PROVIDER=groq."
+            "GEMINI_API_KEY must be configured when AI_PROVIDER=gemini."
         )
 
-    url = f"{settings.groq_base_url.rstrip('/')}{GROQ_CHAT_COMPLETIONS_PATH}"
+    model = settings.gemini_model.strip()
+    if not model:
+        raise AIServiceConfigurationError(
+            "GEMINI_MODEL must be configured when AI_PROVIDER=gemini."
+        )
+
+    path = GEMINI_GENERATE_CONTENT_PATH_TEMPLATE.format(model=model)
+    url = f"{settings.gemini_base_url.rstrip('/')}{path}?key={settings.gemini_api_key}"
+
+    user_prompt = question.strip()
+    if profile_context.strip():
+        user_prompt = f"{user_prompt}\n\nCandidate profile context:\n{profile_context.strip()}"
+
     payload = {
-        "model": settings.groq_model,
-        "messages": _build_messages(
-            question,
-            settings,
-            profile_context=profile_context,
-        ),
-        "temperature": 0.2,
-    }
-    headers = {
-        "Authorization": f"Bearer {settings.groq_api_key}",
-        "Content-Type": "application/json",
-    }
-
-    try:
-        response = await client.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-    except httpx.HTTPStatusError as exc:
-        raise AIProviderResponseError(
-            f"Groq returned HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.RequestError as exc:
-        raise AIProviderRequestError("Unable to reach Groq.") from exc
-
-    try:
-        body = response.json()
-    except ValueError as exc:
-        raise AIProviderResponseError("Groq returned invalid JSON.") from exc
-
-    if not isinstance(body, dict):
-        raise AIProviderResponseError("Groq returned an unexpected JSON structure.")
-
-    choices = body.get("choices")
-    if not isinstance(choices, list) or not choices:
-        raise AIProviderResponseError("Groq returned no completion choices.")
-
-    message = choices[0].get("message") if isinstance(choices[0], dict) else None
-    if not isinstance(message, dict):
-        raise AIProviderResponseError("Groq returned no assistant message.")
-
-    return _extract_text_content(message.get("content"))
-
-
-async def _request_ollama_answer(
-    question: str,
-    settings: Settings,
-    client: httpx.AsyncClient,
-    *,
-    profile_context: str = "",
-) -> str:
-    url = f"{settings.ollama_base_url.rstrip('/')}{OLLAMA_CHAT_PATH}"
-    payload = {
-        "model": settings.ollama_model,
-        "messages": _build_messages(
-            question,
-            settings,
-            profile_context=profile_context,
-        ),
-        "stream": False,
+        "systemInstruction": {
+            "parts": [{"text": settings.ai_system_prompt}],
+        },
+        "contents": [
+            {
+                "parts": [{"text": user_prompt}],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+        },
     }
 
     try:
@@ -160,24 +124,43 @@ async def _request_ollama_answer(
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
         raise AIProviderResponseError(
-            f"Ollama returned HTTP {exc.response.status_code}."
+            f"Gemini returned HTTP {exc.response.status_code}."
         ) from exc
     except httpx.RequestError as exc:
-        raise AIProviderRequestError("Unable to reach Ollama.") from exc
+        raise AIProviderRequestError("Unable to reach Gemini.") from exc
 
     try:
         body = response.json()
     except ValueError as exc:
-        raise AIProviderResponseError("Ollama returned invalid JSON.") from exc
+        raise AIProviderResponseError("Gemini returned invalid JSON.") from exc
 
     if not isinstance(body, dict):
-        raise AIProviderResponseError("Ollama returned an unexpected response format.")
+        raise AIProviderResponseError("Gemini returned an unexpected JSON structure.")
 
-    message = body.get("message")
-    if not isinstance(message, dict):
-        raise AIProviderResponseError("Ollama returned no assistant message.")
+    candidates = body.get("candidates")
+    if not isinstance(candidates, list) or not candidates:
+        raise AIProviderResponseError("Gemini returned no completion candidates.")
 
-    return _extract_text_content(message.get("content"))
+    first_candidate = candidates[0] if isinstance(candidates[0], dict) else None
+    content = first_candidate.get("content") if isinstance(first_candidate, dict) else None
+    if not isinstance(content, dict):
+        raise AIProviderResponseError("Gemini returned no assistant content.")
+
+    parts = content.get("parts")
+    if not isinstance(parts, list) or not parts:
+        raise AIProviderResponseError("Gemini returned no content parts.")
+
+    text_parts = []
+    for part in parts:
+        if isinstance(part, dict) and isinstance(part.get("text"), str):
+            value = part["text"].strip()
+            if value:
+                text_parts.append(value)
+
+    if not text_parts:
+        raise AIProviderResponseError("Gemini returned an empty response.")
+
+    return "\n".join(text_parts)
 
 
 async def answer_interview_question(
@@ -189,21 +172,13 @@ async def answer_interview_question(
 ) -> str:
     resolved_settings = settings or get_settings()
     provider = resolved_settings.ai_provider
-
-    if provider not in {"groq", "ollama"}:
+    if provider != "gemini":
         raise AIServiceConfigurationError(
-            f"Unsupported AI provider: {provider}. Set AI_PROVIDER to groq or ollama."
+            "Unsupported AI provider. Set AI_PROVIDER to gemini."
         )
 
     if client is not None:
-        if provider == "groq":
-            return await _request_groq_answer(
-                question,
-                resolved_settings,
-                client,
-                profile_context=profile_context,
-            )
-        return await _request_ollama_answer(
+        return await _request_gemini_answer(
             question,
             resolved_settings,
             client,
@@ -211,14 +186,7 @@ async def answer_interview_question(
         )
 
     async with _build_client(resolved_settings) as managed_client:
-        if provider == "groq":
-            return await _request_groq_answer(
-                question,
-                resolved_settings,
-                managed_client,
-                profile_context=profile_context,
-            )
-        return await _request_ollama_answer(
+        return await _request_gemini_answer(
             question,
             resolved_settings,
             managed_client,

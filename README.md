@@ -1,179 +1,148 @@
-# Hire Me - Production Portfolio Platform
+# Hire Me
 
-A production-grade portfolio and interactive resume platform that demonstrates full-stack engineering skills through implementation quality, performance, and architecture.
+Production-ready fullstack portfolio platform with an interview chatbot, live analytics, resume management, and modern Angular UI.
 
-## Workspace Roles (Important)
+## Current Status
 
-- This repository is the fullstack workspace root.
-- Frontend source-of-truth is the frontend/ directory in this repository.
-- Use this single frontend/ directory for all Angular code changes.
-- Any previous standalone frontend repository is deprecated and should not be used for new changes.
+- AI provider: Gemini only
+- Backend: FastAPI
+- Frontend: Angular
+- Database: PostgreSQL
+- Chat endpoint: `/api/v1/chat/messages`
 
-## Resume Ownership Model
+This repository no longer uses Groq or Ollama.
 
-- Recruiters always see the public CV profile served from the backend `GET /api/v1/resume-profile` endpoint.
-- Resume updates are owner-only and require `X-Resume-Owner-Token` via:
-  - `POST /api/v1/resume-profile/verify`
-  - `PUT /api/v1/resume-profile`
-- Configure `RESUME_OWNER_TOKEN` to enable secure resume publishing.
-- Private owner panel route: `/owner-admin` (not linked in public navigation).
-- Daily owner metrics endpoint: `GET /api/v1/analytics/admin/today` with `X-Resume-Owner-Token`.
+## Tech Stack
 
-## Stack
+- Backend: FastAPI, Pydantic v2, SQLAlchemy async, Alembic, Strawberry GraphQL
+- Frontend: Angular 18, RxJS, TailwindCSS, Angular Material, Three.js, GSAP, PWA
+- Realtime: WebSocket visitor feed
+- Data: PostgreSQL
+- AI: Gemini API
+- Infra: Docker Compose for local setup, Terraform for cloud infra
 
-- Backend: FastAPI, Pydantic v2, SQLAlchemy 2.0 async, Alembic, PostgreSQL, Strawberry GraphQL
-- Frontend: Angular 18 (standalone components, signals, RxJS), TailwindCSS, Angular Material, Three.js, GSAP, PWA
-- Realtime: WebSocket visitor counter
-- AI: Interview chatbot via Groq or Ollama provider abstraction
-- Security: JWT auth, rate limiting, secure headers
-- Deployment: Docker, AWS ECS Fargate, RDS, S3, CloudFront
-
-## Core Product Features
-
-- 3D interactive resume with floating project cards
-- Live GitHub stats panel
-- Interview Me chatbot
-- Realtime visitor count and event stream
-- Hybrid API surface: REST + GraphQL
-- Dark/light mode with persistence
-- PWA installability and offline support
-
-## High-Level Architecture
-
-- frontend/ serves a static Angular build (Nginx in container), deployed to S3 + CloudFront for production.
-- backend/ serves REST, GraphQL, and WebSocket endpoints from FastAPI.
-- PostgreSQL stores users, projects, visitor events, and chat sessions.
-- ECS Fargate runs backend tasks behind an ALB.
-- RDS PostgreSQL provides managed data persistence.
-- CloudFront distributes frontend assets globally.
-
-## Performance and Quality Targets
-
-- Lighthouse 100 targets: Performance, Accessibility, Best Practices, SEO
-- Core Web Vitals targets:
-  - LCP < 2.5s
-  - CLS < 0.1
-  - INP < 200ms
-- API p95 latency target < 200ms (cached and optimized endpoints)
-- Zero critical vulnerabilities in CI scans
-
-## Repository Structure
+## Repository Layout
 
 ```text
 hire-me/
   backend/
   frontend/
   infra/
-  ci/
-  docs/
-  monitoring/
+  docker-compose.yml
+  .env
+  .env.example
 ```
 
-## Development Prerequisites
+## Environment Configuration
 
-- Docker Desktop (or Docker Engine)
-- Node.js 22+
-- Python 3.12+
-- PostgreSQL client tools (optional)
-- Terraform 1.8+ (for infra)
-- AWS CLI v2 (for deployment)
+Use `.env` (workspace root) for local runtime configuration.
 
-## Local Development Plan
+Required AI variables:
 
-1. Start with Docker Compose for backend + database.
-2. Run Angular frontend with local proxy for API and WS.
-3. Apply migrations using Alembic.
-4. Seed demo data and verify 3D/real-time/chat features.
+```env
+AI_PROVIDER=gemini
+GEMINI_BASE_URL=https://generativelanguage.googleapis.com
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+GEMINI_MODEL=gemini-2.5-flash
+AI_REQUEST_TIMEOUT_SECONDS=30
+AI_VERIFY_TLS=true
+```
 
-## Environment Variables (Summary)
+Notes:
 
-Backend:
+- `AI_PROVIDER` must be `gemini`.
+- Recommended model: `gemini-2.5-flash`.
+- Rotate keys regularly and never commit real keys.
 
-- APP_ENV
-- APP_SECRET_KEY
-- DATABASE_URL
-- JWT_ALGORITHM
-- JWT_ACCESS_TOKEN_EXPIRES_MINUTES
-- RATE_LIMIT_REQUESTS_PER_MINUTE
-- GITHUB_TOKEN
-- GITHUB_USERNAME
-- AI_PROVIDER (groq|ollama)
-- GROQ_BASE_URL
-- GROQ_API_KEY
-- GROQ_MODEL
-- OLLAMA_BASE_URL
-- OLLAMA_MODEL
-- AI_REQUEST_TIMEOUT_SECONDS
-- AI_SYSTEM_PROMPT
+## Local Run (Recommended)
 
-Frontend:
+### 1) Backend
 
-- API_BASE_URL
-- GRAPHQL_URL
-- WS_URL
-- APP_TITLE
+From workspace root:
 
-## API Surface (Planned)
+```powershell
+python run_backend.py
+```
 
-REST:
+Backend runs on:
 
-- /api/v1/health
-- /api/v1/auth/login
-- /api/v1/projects
-- /api/v1/github/stats
-- /api/v1/chat/messages
+- `http://127.0.0.1:8001`
+- health: `GET /api/v1/health`
 
-GraphQL:
+### 2) Frontend
 
-- /graphql for queries/mutations
-- Optional subscriptions for selected realtime feeds
+From `frontend/`:
 
-WebSocket:
+```powershell
+npm install
+npm run start
+```
 
-- /ws/visitors
+Frontend runs on:
 
-## Security Baseline
+- `http://localhost:4200`
 
-- JWT access tokens for protected operations
-- Password hashing with Argon2
-- Rate limiting on auth/chat/public hotspots
-- CORS allowlist by environment
-- Security headers middleware
-- Input validation with Pydantic models
+## Chat Flow
 
-## CI/CD Overview
+1. Frontend sends question to `POST /api/v1/chat/messages`.
+2. Backend enriches with resume context.
+3. Backend calls Gemini `generateContent`.
+4. Assistant response returns to UI.
 
-- backend-ci: always reports a PR status; runs backend lint/type-check only when backend files are part of the change set.
-- frontend-ci: always reports a PR status; runs the frontend production build only when frontend files are part of the change set.
-- infra-plan: always reports a PR status; runs terraform fmt/init/validate/plan only when infra Terraform files are part of the change set.
-- deploy: manual stub workflow kept disabled until real deployment steps are implemented.
+## Validation Checklist
 
-### CI Behavior on Partial Branches
+- `GET http://127.0.0.1:8001/api/v1/health` returns `{"status":"ok"}`
+- `POST /api/v1/chat/messages` returns HTTP 200 with `answer`
+- Interview page shows real answer (not fallback)
 
-- Some branches intentionally include only one area (for example frontend-only or infra-only changes).
-- Workflows still run on PRs and pushes so GitHub shows a status for each check.
-- In partial branches, unrelated jobs may appear as skipped by design after the preflight job runs.
-- Workflow guards check whether required project directories/files exist and whether that area actually changed before running backend, frontend, or infra jobs.
-- A skipped job in this scenario is expected behavior, not a failed pipeline.
+## Troubleshooting
 
-## Milestone Build Order
+### 429 RESOURCE_EXHAUSTED
 
-1. Backend foundation (FastAPI app, config, database session, health check)
-2. Frontend foundation (Angular standalone app, Tailwind, Material, theme)
-3. Feature modules (projects, GitHub stats, visitor WS, chatbot)
-4. 3D resume scene (Three.js + GSAP)
-5. Auth + rate limiting + observability
-6. Docker + infra + CI/CD hardening
+If Gemini returns 429:
 
-## Lighthouse 100 Implementation Notes
+- Verify model is allowed for your key (recommended: `gemini-2.5-flash`)
+- Check quota in Google AI Studio / Google Cloud project
+- Confirm your key belongs to the same active project
+- Ensure API key restrictions do not block `generativelanguage.googleapis.com`
 
-- Optimize images (AVIF/WebP), defer non-critical media
-- Use route-level code splitting and preloading strategy
-- Minimize JS execution in initial route
-- SSR-like rendering strategy where practical (or prerender for key pages)
-- Strong semantic HTML and ARIA labels
-- Strict color contrast and keyboard navigability
+### 502 from chat endpoint
 
-## Next File
+- Usually means upstream provider returned an error
+- Check backend logs for `Gemini returned HTTP ...`
+- Validate `GEMINI_API_KEY` and `GEMINI_MODEL`
 
-Next recommended file: .gitignore
+### Fallback message in UI
+
+- Means backend call failed and frontend fallback answered from profile data
+- Fix provider connectivity/quota first
+
+## Docker Compose
+
+`docker-compose.yml` is aligned to Gemini-only backend env wiring.
+
+Start services:
+
+```powershell
+docker compose up --build
+```
+
+## Security Notes
+
+- Never commit real API keys
+- Keep secrets in environment variables or secret manager
+- Rotate keys exposed in logs/chats immediately
+
+## Owner Resume Endpoints
+
+Owner token is required for private resume management:
+
+- `POST /api/v1/resume-profile/verify`
+- `PUT /api/v1/resume-profile`
+- `GET /api/v1/analytics/admin/today`
+
+Use header:
+
+```text
+X-Resume-Owner-Token: <RESUME_OWNER_TOKEN>
+```
