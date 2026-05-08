@@ -24,53 +24,16 @@ export class ChatbotService {
   async ask(question: string): Promise<string> {
     const normalizedQuestion = question.trim();
     const language = this.detectLanguage(normalizedQuestion);
-    let scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
-
-    try {
-      const profile = await this.api.get<ResumeProfileContext>('/api/v1/resume-profile');
-      scopedQuestion = `${scopedQuestion}\n\nCandidate profile context:\n${JSON.stringify(
-        {
-          name: profile.name,
-          title: profile.title,
-          summary: profile.summary,
-          skills: profile.skills,
-          education: profile.education,
-          projects: profile.projects
-        },
-        null,
-        2
-      )}`;
-    } catch {
-      // If profile context is unavailable, continue with strict guardrails only.
-    }
 
     try {
       const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
-        question: scopedQuestion
+        question: normalizedQuestion
       });
       return response.answer;
     } catch {
       const fallbackProfile = await this.loadFallbackProfile();
       return this.buildLocalFallbackAnswer(normalizedQuestion, fallbackProfile, language);
     }
-  }
-
-  private buildGuardedQuestion(question: string): string {
-    const language = this.detectLanguage(question);
-    const refusalMessage = this.buildOutOfScopeReply(language);
-
-    return [
-      'You are the candidate herself. Answer in first person singular.',
-      language === 'he'
-        ? 'The recruiter asked in Hebrew. Reply in polished Hebrew, keep the text easy to read in RTL, and keep English technical terms readable inline.'
-        : 'The recruiter asked in English. Reply in polished English with a clear LTR structure.',
-      'Answer only about job fit, resume evidence, professional experience, education, skills, projects, portfolio implementation, architecture decisions, and delivery practices that are actually evidenced by the profile and site.',
-      'Be accurate, persuasive, and professional, but do not invent facts or experience.',
-      'If information is missing, say that clearly instead of guessing.',
-      `If the question is outside this scope, reply with this exact message: ${refusalMessage}`,
-      '',
-      `Recruiter question: ${question.trim()}`
-    ].join('\n');
   }
 
   private async loadFallbackProfile(): Promise<ResumeProfileContext | null> {
@@ -172,30 +135,20 @@ export class ChatbotService {
       : 'I am happy to help. In this interview space, I answer only questions related to my fit for the role, my experience, my projects, and my resume. This question currently seems outside that scope. If you meant it in a professional or hiring context, I would be glad if you rephrased it.';
   }
 
-  private isCareerRelevantQuestion(question: string, profile: ResumeProfileContext): boolean {
+  private isCareerRelevantQuestion(question: string, _profile: ResumeProfileContext): boolean {
     const normalizedQuestion = question.toLowerCase();
-    const relevantTerms = [
-      'experience', 'project', 'projects', 'skill', 'skills', 'technology', 'tech', 'stack',
-      'architecture', 'system', 'delivery', 'team', 'role', 'job', 'work', 'fit', 'resume', 'cv',
-      'education', 'degree', 'university', 'backend', 'frontend', 'full stack', 'aws', 'cloud',
-      'ניסיון', 'פרויקט', 'פרויקטים', 'טכנולוג', 'ארכיטקטורה', 'מערכת', 'משרה', 'תפקיד', 'עבודה',
-      'התאמה', 'קורות', 'חיים', 'השכלה', 'לימודים', 'פיתוח', 'מפתחת', 'בקאנד', 'פרונט', 'ענן'
+
+    // In this interview chat, default to professional relevance unless a question is clearly unrelated.
+    const clearlyUnrelatedTerms = [
+      'weather', 'recipe', 'movie', 'sports score', 'horoscope', 'celebrity gossip',
+      'מזג אוויר', 'מתכון', 'סרט', 'תוצאה של משחק', 'רכילות'
     ];
 
-    if (relevantTerms.some((term) => normalizedQuestion.includes(term))) {
-      return true;
+    if (clearlyUnrelatedTerms.some((term) => normalizedQuestion.includes(term))) {
+      return false;
     }
 
-    const profileTerms = [
-      profile.name,
-      profile.title,
-      ...profile.skills,
-      ...profile.projects.map((project) => project.name),
-      ...profile.education.flatMap((item) => [item.degree, item.school])
-    ]
-      .map((item) => item.toLowerCase().trim())
-      .filter((item) => item.length >= 3);
-
-    return profileTerms.some((term) => normalizedQuestion.includes(term));
+    // In interview mode, default to relevant unless clearly unrelated.
+    return true;
   }
 }

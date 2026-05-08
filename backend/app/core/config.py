@@ -28,12 +28,10 @@ class Settings(BaseSettings):
     github_username: str = ""
     github_token: str = ""
 
-    ai_provider: str = "ollama"
-    groq_base_url: str = "https://api.groq.com"
-    groq_api_key: str = ""
-    groq_model: str = "llama-3.1-8b-instant"
-    ollama_base_url: str = "http://ollama:11434"
-    ollama_model: str = "llama3.1:8b"
+    ai_provider: str = "gemini"
+    gemini_base_url: str = "https://generativelanguage.googleapis.com"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
     ai_request_timeout_seconds: float = 30.0
     ai_verify_tls: bool = True
     resume_owner_token: str = ""
@@ -60,9 +58,9 @@ class Settings(BaseSettings):
     @field_validator("ai_provider", mode="before")
     @classmethod
     def validate_ai_provider(cls, value: str | None) -> str:
-        provider = (value or "ollama").strip().lower()
-        if provider not in {"groq", "ollama"}:
-            raise ValueError("AI_PROVIDER must be set to 'groq' or 'ollama'.")
+        provider = (value or "gemini").strip().lower()
+        if provider != "gemini":
+            raise ValueError("AI_PROVIDER must be set to 'gemini'.")
         return provider
 
     @field_validator("ai_request_timeout_seconds", mode="before")
