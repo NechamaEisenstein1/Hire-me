@@ -1,21 +1,16 @@
 from types import SimpleNamespace
 from unittest.mock import patch
-from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-from fastapi import FastAPI
+from fastapi import APIRouter
 
 from app.api.rest.analytics import router
 
 
 @pytest.fixture
-async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
-    app = FastAPI()
-    app.include_router(router)
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+def test_router() -> APIRouter:
+    return router
 
 
 @pytest.mark.anyio

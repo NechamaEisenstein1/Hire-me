@@ -24,34 +24,16 @@ export class ChatbotService {
   async ask(question: string): Promise<string> {
     const normalizedQuestion = question.trim();
     const language = this.detectLanguage(normalizedQuestion);
-    const scopedQuestion = this.buildGuardedQuestion(normalizedQuestion);
 
     try {
       const response = await this.api.post<ChatResponse>('/api/v1/chat/messages', {
-        question: scopedQuestion
+        question: normalizedQuestion
       });
       return response.answer;
     } catch {
       const fallbackProfile = await this.loadFallbackProfile();
       return this.buildLocalFallbackAnswer(normalizedQuestion, fallbackProfile, language);
     }
-  }
-
-  private buildGuardedQuestion(question: string): string {
-    const language = this.detectLanguage(question);
-
-    return [
-      'You are the candidate herself. Answer in first person singular.',
-      language === 'he'
-        ? 'The recruiter asked in Hebrew. Reply in polished Hebrew, keep the text easy to read in RTL, and keep English technical terms readable inline.'
-        : 'The recruiter asked in English. Reply in polished English with a clear LTR structure.',
-      'Answer only about job fit, resume evidence, professional experience, education, skills, projects, portfolio implementation, architecture decisions, and delivery practices that are actually evidenced by the profile and site.',
-      'Be accurate, persuasive, and professional, but do not invent facts or experience.',
-      'If information is missing, say that clearly instead of guessing.',
-      'If and only if the question is clearly unrelated to my professional profile, briefly redirect it back to interview-relevant topics.',
-      '',
-      `Recruiter question: ${question.trim()}`
-    ].join('\n');
   }
 
   private async loadFallbackProfile(): Promise<ResumeProfileContext | null> {

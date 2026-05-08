@@ -58,7 +58,12 @@ def build_resume_profile_context(profile: dict[str, Any]) -> str:
             period = str(item.get("period", "")).strip()
             highlights = _as_list(item.get("highlights"))
             highlights_str = "; ".join(str(h) for h in highlights[:3])
-            experience_summaries.append(f"- {role} at {company} ({period}): {highlights_str}")
+            base = f"- {role} at {company}"
+            if period:
+                base += f" ({period})"
+            if highlights_str:
+                base += f": {highlights_str}"
+            experience_summaries.append(base)
 
     return (
         "My professional profile (answer in first person; only use facts explicitly stated here — never invent details):\n"

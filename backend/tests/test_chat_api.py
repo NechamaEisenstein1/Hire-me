@@ -1,9 +1,8 @@
 from unittest.mock import AsyncMock, patch
-from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-from fastapi import FastAPI
+from fastapi import APIRouter
 
 from app.api.rest.chat import router
 from app.services.ai_chat_service import (
@@ -12,14 +11,9 @@ from app.services.ai_chat_service import (
     AIServiceConfigurationError,
 )
 
-
 @pytest.fixture
-async def async_client() -> AsyncGenerator[httpx.AsyncClient, None]:
-    app = FastAPI()
-    app.include_router(router)
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client
+def test_router() -> APIRouter:
+    return router
 
 
 @pytest.mark.anyio
