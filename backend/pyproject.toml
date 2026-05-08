@@ -35,6 +35,9 @@ types-python-jose = "^3.5.0.20250531"
 line-length = 100
 target-version = "py312"
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [build-system]
 requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
