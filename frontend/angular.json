@@ -35,7 +35,14 @@
                 }
               ],
               "serviceWorker": "ngsw-config.json",
-              "optimization": { "scripts": true, "styles": true, "fonts": false },
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": true
+                },
+                "fonts": false
+              },
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,
