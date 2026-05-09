@@ -70,7 +70,14 @@ import { AppShellStore } from './core/stores/app-shell.store';
 
         <span class="flex-1" aria-hidden="true"></span>
 
-        <!-- Interview Me CTA (desktop) -->
+        <!-- Feature CTAs (desktop) -->
+        <a
+          routerLink="/resume-3d"
+          mat-stroked-button
+          class="hidden text-sm md:inline-flex"
+        >
+          3D Resume
+        </a>
         <a
           routerLink="/interview-me"
           mat-stroked-button

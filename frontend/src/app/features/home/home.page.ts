@@ -246,6 +246,12 @@ type GitHubRepo = {
             >
               Resume Studio
             </a>
+            <a
+              routerLink="/resume-3d"
+              class="rounded-xl border border-emerald-500 px-7 py-3.5 text-sm font-semibold text-emerald-600 no-underline transition hover:bg-emerald-50 dark:border-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+            >
+              3D Resume ↗
+            </a>
           </div>
         </div>
       </section>
