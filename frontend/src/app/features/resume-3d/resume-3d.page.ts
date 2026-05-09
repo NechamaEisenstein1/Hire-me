@@ -14,8 +14,6 @@ import * as THREE from 'three';
 import { ApiService } from '../../core/services/api.service';
 import {
   ParsedResume,
-  ResumeExperience,
-  ResumeProject,
 } from '../resume-studio/resume-parser';
 
 // ── Card proportions (business-card 1.586 : 1) ────────────────────────────────
@@ -403,13 +401,42 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     ctx.font = `500 ${Math.round(TEX_H * 0.062)}px Inter, "Helvetica Neue", sans-serif`;
     const pillH = Math.round(TEX_H * 0.105);
     const pillPadX = 18;
-    let px = L;
-    const py = Math.round(TEX_H * 0.655);
+    const rowGap = Math.round(TEX_H * 0.03);
+    const maxRows = 2;
+    const bigTechSkills = [
+      'System Design',
+      'Distributed Systems',
+      'Scalability',
+      'Cloud Architecture',
+      'Kubernetes',
+      'CI/CD',
+      'Observability',
+      'Performance',
+      'Security',
+      'Data Modeling',
+    ];
+    const skillsToRender = [...profile.skills, ...bigTechSkills]
+      .filter((skill, index, arr) =>
+        arr.findIndex((candidate) => candidate.toLowerCase() === skill.toLowerCase()) === index,
+      )
+      .slice(0, 14);
 
-    for (const skill of profile.skills.slice(0, 8)) {
+    let px = L;
+    let currentRow = 0;
+    const basePy = Math.round(TEX_H * 0.655);
+
+    for (const skill of skillsToRender) {
       const tw = ctx.measureText(skill).width;
       const pw = tw + pillPadX * 2;
-      if (px + pw > TEX_W - L) break;
+      if (px + pw > TEX_W - L) {
+        currentRow += 1;
+        if (currentRow >= maxRows) {
+          break;
+        }
+        px = L;
+      }
+
+      const py = basePy + currentRow * (pillH + rowGap);
 
       // Fill
       ctx.fillStyle = '#0d2a1a';
@@ -428,8 +455,12 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     // Bottom meta (location + email)
     ctx.fillStyle = '#334155';
     ctx.font = `${Math.round(TEX_H * 0.056)}px "Courier New", monospace`;
-    const locText = `⌖  ${profile.location}`;
-    ctx.fillText(locText, L, Math.round(TEX_H * 0.9));
+    const cleanedLocation = profile.location
+      .replace(/location\s*[:\-]?\s*/i, '')
+      .trim();
+    if (cleanedLocation) {
+      ctx.fillText(`⌖  ${cleanedLocation}`, L, Math.round(TEX_H * 0.9));
+    }
     if (profile.email) {
       const emailW = ctx.measureText(profile.email).width;
       ctx.fillText(profile.email, TEX_W - L - emailW, Math.round(TEX_H * 0.9));
@@ -440,7 +471,7 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
 
   // ── Back canvas texture ────────────────────────────────────────────────────
 
-  private buildBackTexture(profile: ParsedResume): THREE.CanvasTexture {
+  private buildBackTexture(_profile: ParsedResume): THREE.CanvasTexture {
     const { ctx, canvas } = this.createCanvas();
 
     // Gradient background (mirrored variant)
@@ -457,78 +488,31 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     ctx.fillStyle = stripe;
     this.fillRoundRect(ctx, TEX_W - 9, 0, 9, TEX_H, 4);
 
-    const L = 48;
-    const exp: ResumeExperience | undefined = profile.experience?.[0];
-    const proj: ResumeProject | undefined = profile.projects?.[0];
+    // Cute centered "hire me"
+    ctx.save();
+    ctx.translate(TEX_W / 2, TEX_H / 2);
+    ctx.rotate(-0.04);
 
-    // ── EXPERIENCE block ────────────────────────────────────────────────────
+    const shadowGradient = ctx.createLinearGradient(-260, -40, 260, 40);
+    shadowGradient.addColorStop(0, '#22c55e40');
+    shadowGradient.addColorStop(1, '#38bdf840');
+    ctx.fillStyle = shadowGradient;
+    this.fillRoundRect(ctx, -300, -115, 600, 230, 60);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = `bold ${Math.round(TEX_H * 0.2)}px Inter, "Helvetica Neue", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('hire me', 0, 0);
+
     ctx.fillStyle = '#4ade80';
-    ctx.font = `700 ${Math.round(TEX_H * 0.062)}px Inter, "Helvetica Neue", sans-serif`;
-    ctx.fillText('EXPERIENCE', L, Math.round(TEX_H * 0.135));
-
-    if (exp) {
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = `bold ${Math.round(TEX_H * 0.105)}px Inter, "Helvetica Neue", sans-serif`;
-      ctx.fillText(exp.role, L, Math.round(TEX_H * 0.258));
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = `${Math.round(TEX_H * 0.068)}px Inter, "Helvetica Neue", sans-serif`;
-      ctx.fillText(`${exp.company}  ·  ${exp.period}`, L, Math.round(TEX_H * 0.355));
-
-      ctx.font = `${Math.round(TEX_H * 0.058)}px Inter, "Helvetica Neue", sans-serif`;
-      (exp.highlights ?? []).slice(0, 2).forEach((h, i) => {
-        const y = Math.round(TEX_H * (0.445 + i * 0.1));
-        ctx.fillStyle = '#22c55e99';
-        ctx.fillText('▸', L, y);
-        ctx.fillStyle = '#64748b';
-        const maxW = TEX_W - L - 70;
-        let text = h;
-        while (ctx.measureText(text).width > maxW && text.length > 8) {
-          text = text.slice(0, -1);
-        }
-        ctx.fillText(text !== h ? text + '…' : text, L + 28, y);
-      });
-    } else {
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = `${Math.round(TEX_H * 0.062)}px Inter, "Helvetica Neue", sans-serif`;
-      this.drawWrappedText(
-        ctx,
-        profile.summary || 'Hands-on engineer focused on product quality and delivery velocity.',
-        L,
-        Math.round(TEX_H * 0.3),
-        TEX_W - L * 2,
-        Math.round(TEX_H * 0.078),
-        3,
-      );
-    }
-
-    // Divider
-    ctx.strokeStyle = '#1e3a2f';
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(L, Math.round(TEX_H * 0.662));
-    ctx.lineTo(TEX_W - L, Math.round(TEX_H * 0.662));
-    ctx.stroke();
-
-    // ── PROJECTS block ──────────────────────────────────────────────────────
-    ctx.fillStyle = '#4ade80';
-    ctx.font = `700 ${Math.round(TEX_H * 0.062)}px Inter, "Helvetica Neue", sans-serif`;
-    ctx.fillText('PROJECTS', L, Math.round(TEX_H * 0.745));
-
-    if (proj) {
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = `bold ${Math.round(TEX_H * 0.078)}px Inter, "Helvetica Neue", sans-serif`;
-      ctx.fillText(proj.name, L, Math.round(TEX_H * 0.836));
-
-      ctx.fillStyle = '#4ade8088';
-      ctx.font = `${Math.round(TEX_H * 0.057)}px Inter, "Helvetica Neue", sans-serif`;
-      ctx.fillText((proj.stack ?? []).slice(0, 5).join('  ·  '), L, Math.round(TEX_H * 0.91));
-    } else {
-      const stackPreview = profile.skills.slice(0, 5).join('  ·  ') || 'Angular  ·  Python  ·  FastAPI';
-      ctx.fillStyle = '#4ade8088';
-      ctx.font = `${Math.round(TEX_H * 0.057)}px Inter, "Helvetica Neue", sans-serif`;
-      ctx.fillText(stackPreview, L, Math.round(TEX_H * 0.91));
-    }
+    ctx.arc(-250, -120, 5, 0, Math.PI * 2);
+    ctx.arc(250, 120, 4, 0, Math.PI * 2);
+    ctx.arc(220, -130, 3, 0, Math.PI * 2);
+    ctx.arc(-210, 130, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     return new THREE.CanvasTexture(canvas);
   }
