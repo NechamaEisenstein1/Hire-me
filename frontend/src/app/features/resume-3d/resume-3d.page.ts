@@ -100,6 +100,7 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
   private cardGroup?: THREE.Group;
   private floatTween?: gsap.core.Tween;
   private flipTween?: gsap.core.Tween;
+  private shimmerTween?: gsap.core.Tween;
   private isFlipping = false;
   private pointer = { x: 0, y: 0 };
   private onResize?: () => void;
@@ -138,6 +139,7 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     if (this.animId) cancelAnimationFrame(this.animId);
     this.floatTween?.kill();
     this.flipTween?.kill();
+    this.shimmerTween?.kill();
     if (this.onResize) globalThis.removeEventListener('resize', this.onResize);
     const host = this.canvasHost.nativeElement;
     if (this.onPointerMove) host.removeEventListener('pointermove', this.onPointerMove);
@@ -154,6 +156,15 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     if (this.isFlipping || !this.cardGroup) return;
     this.isFlipping = true;
     this.floatTween?.pause();
+
+    // Reset tilt before flip to avoid a jittery transition between axes.
+    gsap.to(this.cardGroup.rotation, {
+      x: 0,
+      z: 0,
+      duration: 0.22,
+      ease: 'power1.out',
+      overwrite: true,
+    });
 
     const nextFlipped = !this.flipped();
     const targetY = nextFlipped ? Math.PI : 0;
@@ -246,9 +257,9 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     const render = () => {
       if (this.cardGroup && !this.isFlipping) {
         this.cardGroup.rotation.x +=
-          (this.pointer.y * -0.2 - this.cardGroup.rotation.x) * 0.07;
+          (this.pointer.y * -0.16 - this.cardGroup.rotation.x) * 0.06;
         this.cardGroup.rotation.z +=
-          (this.pointer.x * 0.12 - this.cardGroup.rotation.z) * 0.07;
+          (this.pointer.x * 0.1 - this.cardGroup.rotation.z) * 0.06;
       }
       this.renderer!.render(scene, camera);
       this.animId = requestAnimationFrame(render);
@@ -281,9 +292,13 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     this.materials.push(frontMat, backMat);
 
     const frontMesh = new THREE.Mesh(geomFront, frontMat);
+    frontMesh.position.z = 0.01;
+    frontMesh.renderOrder = 2;
     // Back plane faces away when group.rotation.y === 0; visible when === Math.PI
     const backMesh = new THREE.Mesh(geomBack, backMat);
     backMesh.rotation.y = Math.PI;
+    backMesh.position.z = -0.01;
+    backMesh.renderOrder = 2;
 
     // Paper-thin edge — gives a satisfying physical feel
     const edgeGeom = new THREE.BoxGeometry(CARD_W, CARD_H, 0.018);
@@ -291,9 +306,40 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     this.geometries.push(edgeGeom);
     this.materials.push(edgeMat);
     const edge = new THREE.Mesh(edgeGeom, edgeMat);
-    edge.position.z = -0.009;
+    edge.renderOrder = 1;
 
-    group.add(frontMesh, backMesh, edge);
+    const shimmerTex = this.buildShimmerTexture();
+    this.textures.push(shimmerTex);
+    const shimmerMat = new THREE.MeshBasicMaterial({
+      map: shimmerTex,
+      transparent: true,
+      side: THREE.FrontSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.26,
+    });
+    this.materials.push(shimmerMat);
+
+    const shimmerFront = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), shimmerMat);
+    shimmerFront.position.z = 0.016;
+    shimmerFront.renderOrder = 3;
+    const shimmerBack = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), shimmerMat);
+    shimmerBack.rotation.y = Math.PI;
+    shimmerBack.position.z = -0.016;
+    shimmerBack.renderOrder = 3;
+    this.geometries.push(
+      shimmerFront.geometry as THREE.BufferGeometry,
+      shimmerBack.geometry as THREE.BufferGeometry,
+    );
+
+    this.shimmerTween = gsap.to(shimmerTex.offset, {
+      x: 1,
+      duration: 3.4,
+      repeat: -1,
+      ease: 'none',
+    });
+
+    group.add(frontMesh, backMesh, edge, shimmerFront, shimmerBack);
     return group;
   }
 
@@ -442,6 +488,18 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
         }
         ctx.fillText(text !== h ? text + '…' : text, L + 28, y);
       });
+    } else {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = `${Math.round(TEX_H * 0.062)}px Inter, "Helvetica Neue", sans-serif`;
+      this.drawWrappedText(
+        ctx,
+        profile.summary || 'Hands-on engineer focused on product quality and delivery velocity.',
+        L,
+        Math.round(TEX_H * 0.3),
+        TEX_W - L * 2,
+        Math.round(TEX_H * 0.078),
+        3,
+      );
     }
 
     // Divider
@@ -465,9 +523,39 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
       ctx.fillStyle = '#4ade8088';
       ctx.font = `${Math.round(TEX_H * 0.057)}px Inter, "Helvetica Neue", sans-serif`;
       ctx.fillText((proj.stack ?? []).slice(0, 5).join('  ·  '), L, Math.round(TEX_H * 0.91));
+    } else {
+      const stackPreview = profile.skills.slice(0, 5).join('  ·  ') || 'Angular  ·  Python  ·  FastAPI';
+      ctx.fillStyle = '#4ade8088';
+      ctx.font = `${Math.round(TEX_H * 0.057)}px Inter, "Helvetica Neue", sans-serif`;
+      ctx.fillText(stackPreview, L, Math.round(TEX_H * 0.91));
     }
 
     return new THREE.CanvasTexture(canvas);
+  }
+
+  private buildShimmerTexture(): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d')!;
+
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.42, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+    grad.addColorStop(0.58, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.ClampToEdgeWrapping;
+    tex.repeat.set(1.6, 1);
+    tex.offset.set(-1, 0);
+    tex.center.set(0.5, 0.5);
+    tex.rotation = -Math.PI / 9;
+    return tex;
   }
 
   // ── Star-field particles ───────────────────────────────────────────────────
@@ -503,6 +591,46 @@ export class Resume3dPage implements AfterViewInit, OnDestroy {
     canvas.height = TEX_H;
     const ctx = canvas.getContext('2d')!;
     return { canvas, ctx };
+  }
+
+  private drawWrappedText(
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+    maxLines: number,
+  ): void {
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let current = '';
+
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (ctx.measureText(next).width <= maxWidth) {
+        current = next;
+        continue;
+      }
+      if (current) lines.push(current);
+      current = word;
+      if (lines.length === maxLines - 1) break;
+    }
+
+    if (current && lines.length < maxLines) {
+      lines.push(current);
+    }
+
+    for (let i = 0; i < lines.length; i += 1) {
+      let line = lines[i];
+      if (i === maxLines - 1 && line !== text && ctx.measureText(line).width > maxWidth - 18) {
+        while (ctx.measureText(`${line}…`).width > maxWidth && line.length > 1) {
+          line = line.slice(0, -1);
+        }
+        line += '…';
+      }
+      ctx.fillText(line, x, y + i * lineHeight);
+    }
   }
 
   private fillRoundRect(
