@@ -1,157 +1,135 @@
-# Hire Me
+# Hire Me — Interactive Portfolio Platform
 
-Production-ready fullstack portfolio platform with an interview chatbot, live analytics, resume management, and modern Angular UI.
+A production-grade fullstack portfolio with an AI interview chatbot, live visitor analytics, 3D resume card, and an interactive Resume Studio — built to be explored by recruiters and hiring managers.
 
-## Current Status
+![Angular](https://img.shields.io/badge/Angular-18-DD0031?logo=angular&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Gemini](https://img.shields.io/badge/AI-Gemini-4285F4?logo=google&logoColor=white)
 
-- AI provider: Gemini only
-- Backend: FastAPI
-- Frontend: Angular
-- Database: PostgreSQL
-- Chat endpoint: `/api/v1/chat/messages`
+---
 
-This repository no longer uses Groq or Ollama.
+## Features
+
+| Feature | Description |
+|---|---|
+| 🤖 **AI Interview Chatbot** | Ask me anything about my experience — powered by Gemini |
+| 📄 **Resume Studio** | Interactive CV viewer with skills, timeline, projects, and education |
+| 🎲 **3D Resume Card** | Flippable Three.js card with live resume data and parallax tilt |
+| 📊 **Live Analytics** | Real-time visitor WebSocket feed and owner admin dashboard |
+| 🗂 **Resume Parser** | Upload JSON, TXT, PDF, or DOCX to preview parsed resume data |
+| 🔐 **Owner Admin Panel** | Token-protected panel for managing the live resume profile |
+
+---
 
 ## Tech Stack
 
-- Backend: FastAPI, Pydantic v2, SQLAlchemy async, Alembic, Strawberry GraphQL
-- Frontend: Angular 18, RxJS, TailwindCSS, Angular Material, Three.js, GSAP, PWA
-- Realtime: WebSocket visitor feed
-- Data: PostgreSQL
-- AI: Gemini API
-- Infra: Docker Compose for local setup, Terraform for cloud infra
+**Backend** — FastAPI · Pydantic v2 · SQLAlchemy async · Alembic · Strawberry GraphQL · PostgreSQL · Gemini API · WebSockets · SlowAPI rate limiting
 
-## Repository Layout
+**Frontend** — Angular 18 · TailwindCSS · Angular Material · Three.js · GSAP · PWA · RxJS
 
-```text
+**Infrastructure** — Docker Compose (local) · Terraform (cloud) · Nginx
+
+---
+
+## Project Layout
+
+```
 hire-me/
-  backend/
-  frontend/
-  infra/
-  docker-compose.yml
-  .env
-  .env.example
+├── backend/          # FastAPI app, DB models, AI service, REST + GraphQL + WS
+├── frontend/         # Angular SPA — home, resume studio, 3D resume, interview, admin
+├── infra/terraform/  # ECS, RDS, S3/CloudFront cloud deployment
+├── docker-compose.yml
+└── .env.example
 ```
 
-## Environment Configuration
+---
 
-Use `.env` (workspace root) for local runtime configuration.
+## Quick Start
 
-Minimum required local variables:
-
-```env
-APP_SECRET_KEY=replace-with-strong-secret
-DATABASE_URL=sqlite+aiosqlite:///./hire_me_local.db
-AI_PROVIDER=gemini
-GEMINI_BASE_URL=https://generativelanguage.googleapis.com
-GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-GEMINI_MODEL=gemini-2.5-flash
-AI_REQUEST_TIMEOUT_SECONDS=30
-AI_VERIFY_TLS=true
-```
-
-Notes:
-
-- `APP_SECRET_KEY` is mandatory even for local dev.
-- The default local `.env.example` uses SQLite so `python run_backend.py` works without Docker.
-- If you want PostgreSQL locally instead, set `DATABASE_URL` to your local instance explicitly.
-- `AI_PROVIDER` must be `gemini`.
-- Recommended model: `gemini-2.5-flash`.
-- Rotate keys regularly and never commit real keys.
-
-## Local Run (Recommended)
-
-### 1) Backend
-
-From workspace root:
+### Option A — Docker Compose (recommended)
 
 ```powershell
-python run_backend.py
+cp .env.example .env   # fill in APP_SECRET_KEY and GEMINI_API_KEY
+docker compose up --build
 ```
 
-This command expects `.env` in the workspace root. Copy from `.env.example` and fill in at least `APP_SECRET_KEY` and `GEMINI_API_KEY`.
+- Frontend: http://localhost:4200
+- Backend API: http://localhost:8000
+- API docs: http://localhost:8000/docs
 
-Backend runs on:
+### Option B — Local dev (no Docker)
 
-- `http://127.0.0.1:8001`
-- health: `GET /api/v1/health`
+**Backend** (from workspace root):
 
-### 2) Frontend
+```powershell
+cp .env.example .env   # fill in secrets
+python run_backend.py
+# runs on http://127.0.0.1:8001
+```
 
-From `frontend/`:
+**Frontend** (from `frontend/`):
 
 ```powershell
 npm install
 npm run start
+# runs on http://localhost:4200
 ```
 
-Frontend runs on:
+---
 
-- `http://localhost:4200`
+## Environment Variables
 
-## Chat Flow
+Copy `.env.example` to `.env` and set at minimum:
 
-1. Frontend sends question to `POST /api/v1/chat/messages`.
-2. Backend enriches with resume context.
-3. Backend calls Gemini `generateContent`.
-4. Assistant response returns to UI.
+```env
+APP_SECRET_KEY=replace-with-strong-secret
+DATABASE_URL=sqlite+aiosqlite:///./hire_me_local.db   # SQLite for local dev
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+GEMINI_MODEL=gemini-2.5-flash
+RESUME_OWNER_TOKEN=your-private-owner-token
+```
 
-## Validation Checklist
+> For Docker, use PostgreSQL: `postgresql+asyncpg://hire_me:hire_me_password@postgres:5432/hire_me`
 
-- `GET http://127.0.0.1:8001/api/v1/health` returns `{"status":"ok"}`
-- `POST /api/v1/chat/messages` returns HTTP 200 with `answer`
-- Interview page shows real answer (not fallback)
+> Never commit real keys. Rotate any key exposed in logs immediately.
+
+---
+
+## Key API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/health` | Health check |
+| `POST` | `/api/v1/chat/messages` | AI interview chat |
+| `GET` | `/api/v1/resume-profile` | Public resume data |
+| `PUT` | `/api/v1/resume-profile` | Update resume (owner only) |
+| `GET` | `/api/v1/analytics/admin/today` | Analytics dashboard (owner only) |
+| `WS` | `/ws/visitors` | Live visitor feed |
+
+Owner-protected endpoints require header: `X-Resume-Owner-Token: <token>`
+
+---
 
 ## Troubleshooting
 
-### 429 RESOURCE_EXHAUSTED
+**`429 RESOURCE_EXHAUSTED` from chat**
+- Verify `GEMINI_MODEL=gemini-2.5-flash` is enabled for your key
+- Check quota in [Google AI Studio](https://aistudio.google.com)
 
-If Gemini returns 429:
-
-- Verify model is allowed for your key (recommended: `gemini-2.5-flash`)
-- Check quota in Google AI Studio / Google Cloud project
-- Confirm your key belongs to the same active project
-- Ensure API key restrictions do not block `generativelanguage.googleapis.com`
-
-### 502 from chat endpoint
-
-- Usually means upstream provider returned an error
+**`502` from chat endpoint**
 - Check backend logs for `Gemini returned HTTP ...`
-- Validate `GEMINI_API_KEY` and `GEMINI_MODEL`
+- Validate `GEMINI_API_KEY` in your `.env`
 
-### Fallback message in UI
+**Fallback answer shown in UI**
+- Backend call failed — fix provider connectivity and quota first
 
-- Means backend call failed and frontend fallback answered from profile data
-- Fix provider connectivity/quota first
-
-## Docker Compose
-
-`docker-compose.yml` is aligned to Gemini-only backend env wiring.
-
-For Docker Compose, keep using a PostgreSQL `DATABASE_URL` that points at the compose service, for example `postgresql+asyncpg://hire_me:hire_me_password@postgres:5432/hire_me`.
-
-Start services:
-
-```powershell
-docker compose up --build
-```
+---
 
 ## Security Notes
 
-- Never commit real API keys
-- Keep secrets in environment variables or secret manager
-- Rotate keys exposed in logs/chats immediately
-
-## Owner Resume Endpoints
-
-Owner token is required for private resume management:
-
-- `POST /api/v1/resume-profile/verify`
-- `PUT /api/v1/resume-profile`
-- `GET /api/v1/analytics/admin/today`
-
-Use header:
-
-```text
-X-Resume-Owner-Token: <RESUME_OWNER_TOKEN>
-```
+- All secrets are loaded from environment variables — never hardcoded
+- Rate limiting via SlowAPI on all public endpoints
+- Owner token kept separate from public API surface
+- TLS verification configurable via `AI_VERIFY_TLS`
