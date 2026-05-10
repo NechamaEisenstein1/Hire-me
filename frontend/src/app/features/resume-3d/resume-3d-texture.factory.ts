@@ -65,22 +65,7 @@ export class Resume3dTextureFactory {
     const pillPaddingX = 18;
     const rowGap = Math.round(TEX_H * 0.03);
     const maxRows = 2;
-    const skillsToRender = [
-      'Python',
-      'Java',
-      'TypeScript',
-      'React',
-      'Node.js',
-      'SQL',
-      'AWS',
-      'Kubernetes',
-      'System Design',
-      'Distributed Systems',
-      'Microservices',
-      'CI/CD',
-      'Data Engineering',
-      'AI/ML',
-    ];
+    const skillsToRender = profile.skills.length > 0 ? profile.skills : ['No skills listed'];
 
     let x = leftPadding;
     let row = 0;

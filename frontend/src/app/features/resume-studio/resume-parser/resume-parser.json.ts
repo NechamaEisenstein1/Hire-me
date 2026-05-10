@@ -1,7 +1,12 @@
 import { JsonInput, ParsedResume } from './resume-parser.types';
 
 export function parseJsonResume(content: string): ParsedResume {
-  const parsed = JSON.parse(content) as JsonInput;
+  let parsed: JsonInput;
+  try {
+    parsed = JSON.parse(content) as JsonInput;
+  } catch {
+    throw new Error('Invalid JSON: the file could not be parsed. Please ensure it is valid JSON matching the expected resume structure.');
+  }
 
   const experience = (parsed.experience ?? []).map((item) => ({
     role: item.role ?? 'Role',

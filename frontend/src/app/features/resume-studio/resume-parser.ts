@@ -40,5 +40,6 @@ function getFileExtension(fileName: string): SupportedExtension | null {
     return null;
   }
 
-  return fileName.slice(dotIndex + 1).toLowerCase() as SupportedExtension;
+  const ext = fileName.slice(dotIndex + 1).toLowerCase();
+  return SUPPORTED_EXTENSIONS.includes(ext as SupportedExtension) ? (ext as SupportedExtension) : null;
 }

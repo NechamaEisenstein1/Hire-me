@@ -34,8 +34,8 @@ def upgrade() -> None:
     op.create_table(
         "visitor_events",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("event_type", sa.String(length=50), nullable=False),
-        sa.Column("ip_hash", sa.String(length=64), nullable=True),
+        sa.Column("event_type", sa.String(length=80), nullable=False),
+        sa.Column("ip_hash", sa.String(length=255), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_visitor_events_id", "visitor_events", ["id"], unique=False)
@@ -43,8 +43,8 @@ def upgrade() -> None:
     op.create_table(
         "chat_sessions",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("session_key", sa.String(length=36), nullable=False, unique=True),
-        sa.Column("provider", sa.String(length=50), nullable=False, server_default="gemini"),
+        sa.Column("session_key", sa.String(length=120), nullable=False, unique=True),
+        sa.Column("provider", sa.String(length=50), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
     )
     op.create_index("ix_chat_sessions_id", "chat_sessions", ["id"], unique=False)
@@ -53,18 +53,18 @@ def upgrade() -> None:
     op.create_table(
         "chat_messages",
         sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("session_id", sa.Integer(), nullable=False),
-        sa.Column("role", sa.String(length=20), nullable=False),
+        sa.Column("chat_session_id", sa.Integer(), nullable=False),
+        sa.Column("role", sa.String(length=32), nullable=False),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.ForeignKeyConstraint(["session_id"], ["chat_sessions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["chat_session_id"], ["chat_sessions.id"], ondelete="CASCADE"),
     )
     op.create_index("ix_chat_messages_id", "chat_messages", ["id"], unique=False)
-    op.create_index("ix_chat_messages_session_id", "chat_messages", ["session_id"], unique=False)
+    op.create_index("ix_chat_messages_chat_session_id", "chat_messages", ["chat_session_id"], unique=False)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_chat_messages_session_id", table_name="chat_messages")
+    op.drop_index("ix_chat_messages_chat_session_id", table_name="chat_messages")
     op.drop_index("ix_chat_messages_id", table_name="chat_messages")
     op.drop_table("chat_messages")
     op.drop_index("ix_chat_sessions_session_key", table_name="chat_sessions")

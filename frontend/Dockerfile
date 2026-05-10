@@ -2,7 +2,7 @@
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm config set strict-ssl false && npm ci
+RUN npm ci
 
 COPY . .
 RUN npm run build

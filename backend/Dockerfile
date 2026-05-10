@@ -2,8 +2,7 @@
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_TRUSTED_HOST="pypi.org files.pythonhosted.org pypi.python.org"
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
