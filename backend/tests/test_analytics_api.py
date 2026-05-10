@@ -13,7 +13,7 @@ def test_router() -> APIRouter:
     return router
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_visit_endpoint_records_visit(async_client: httpx.AsyncClient) -> None:
     with patch('app.api.rest.analytics.record_visit') as record_visit_mock:
         response = await async_client.post('/api/v1/analytics/visit')
@@ -22,7 +22,7 @@ async def test_visit_endpoint_records_visit(async_client: httpx.AsyncClient) -> 
     record_visit_mock.assert_called_once()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_resume_download_endpoint_records_download(async_client: httpx.AsyncClient) -> None:
     with patch('app.api.rest.analytics.record_resume_download') as record_download_mock:
         response = await async_client.post('/api/v1/analytics/resume-download')
@@ -31,7 +31,7 @@ async def test_resume_download_endpoint_records_download(async_client: httpx.Asy
     record_download_mock.assert_called_once()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_admin_today_requires_valid_owner_token(async_client: httpx.AsyncClient) -> None:
     with patch(
         'app.api.rest.analytics.get_settings',
@@ -42,7 +42,7 @@ async def test_admin_today_requires_valid_owner_token(async_client: httpx.AsyncC
     assert response.status_code == 401
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_admin_today_returns_stats_with_valid_token(async_client: httpx.AsyncClient) -> None:
     with patch(
         'app.api.rest.analytics.get_settings',

@@ -13,11 +13,6 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 
-@pytest.fixture(params=["asyncio"])
-def anyio_backend(request):
-    return request.param
-
-
 @pytest.fixture
 async def async_client(test_router: APIRouter) -> AsyncGenerator[httpx.AsyncClient, None]:
     app = FastAPI()

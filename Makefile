@@ -8,6 +8,7 @@ help:
 	@echo "  make down            - Stop local stack"
 	@echo "  make logs            - Follow all logs"
 	@echo "  make ps              - Show service status"
+	@echo "  make check           - Verify all services are healthy"
 	@echo "  make backend-shell   - Open shell in backend container"
 	@echo "  make backend-migrate - Run Alembic migrations"
 	@echo "  make backend-seed    - Seed demo data"
@@ -23,6 +24,11 @@ logs:
 
 ps:
 	docker compose ps
+
+check:
+	docker compose ps
+	curl -sf http://localhost:8000/health && echo "Backend OK" || echo "Backend FAILED"
+	curl -sf http://localhost:4200 > /dev/null && echo "Frontend OK" || echo "Frontend FAILED"
 
 backend-shell:
 	docker compose exec backend /bin/sh

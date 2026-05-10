@@ -13,7 +13,7 @@ def test_router() -> APIRouter:
     return router
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_read_resume_profile_returns_public_data(async_client: httpx.AsyncClient) -> None:
     profile = {
         "name": "Nechama",
@@ -34,7 +34,7 @@ async def test_read_resume_profile_returns_public_data(async_client: httpx.Async
     assert response.json()["name"] == "Nechama"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_verify_owner_access_requires_valid_token(async_client: httpx.AsyncClient) -> None:
     with patch(
         "app.api.rest.resume_profile.get_settings",
@@ -45,7 +45,7 @@ async def test_verify_owner_access_requires_valid_token(async_client: httpx.Asyn
     assert response.status_code == 401
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_verify_owner_access_returns_valid_true(async_client: httpx.AsyncClient) -> None:
     with patch(
         "app.api.rest.resume_profile.get_settings",
@@ -60,7 +60,7 @@ async def test_verify_owner_access_returns_valid_true(async_client: httpx.AsyncC
     assert response.json() == {"valid": True}
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_update_resume_profile_persists_when_token_valid(async_client: httpx.AsyncClient) -> None:
     payload = {
         "profile": {
