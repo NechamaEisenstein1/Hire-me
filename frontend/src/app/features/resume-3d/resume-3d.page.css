@@ -1,0 +1,132 @@
+:host {
+  display: block;
+}
+
+.resume3d-page {
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 2rem 1rem;
+}
+
+.resume3d-shell {
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at top left, rgba(74, 222, 128, 0.12), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(241, 245, 249, 0.66));
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(14px);
+  padding: 1.5rem;
+}
+
+.resume3d-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.resume3d-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.resume3d-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  opacity: 0.62;
+}
+
+.resume3d-link {
+  align-self: flex-start;
+  border: 1px solid rgba(74, 85, 104, 0.26);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  color: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.resume3d-link:hover {
+  background: rgba(148, 163, 184, 0.14);
+  border-color: rgba(74, 85, 104, 0.38);
+  transform: translateY(-1px);
+}
+
+.resume3d-error {
+  border: 1px solid rgba(252, 165, 165, 0.9);
+  background: rgba(254, 242, 242, 0.96);
+  color: rgb(127, 29, 29);
+  border-radius: 1rem;
+  padding: 1rem;
+  font-size: 0.95rem;
+}
+
+.resume3d-loading {
+  margin-top: 1rem;
+  width: 100%;
+  height: 62vh;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.85), rgba(203, 213, 225, 0.7), rgba(226, 232, 240, 0.85));
+  background-size: 200% 100%;
+  animation: resume3d-pulse 1.8s ease-in-out infinite;
+}
+
+.resume3d-canvas {
+  margin-top: 1rem;
+  width: 100%;
+  height: 62vh;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #020617, #0f172a 45%, #020617);
+  outline: none;
+}
+
+.resume3d-canvas:focus-visible {
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.22);
+}
+
+.resume3d-hint {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.76rem;
+  opacity: 0.44;
+  user-select: none;
+}
+
+@keyframes resume3d-pulse {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@media (max-width: 640px) {
+  .resume3d-shell {
+    padding: 1.1rem;
+  }
+
+  .resume3d-header {
+    flex-direction: column;
+  }
+
+  .resume3d-canvas,
+  .resume3d-loading {
+    height: 54vh;
+  }
+}

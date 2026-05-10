@@ -9,14 +9,12 @@ packages = [{ include = "app" }]
 python = "^3.12"
 fastapi = "^0.116.1"
 uvicorn = { extras = ["standard"], version = "^0.35.0" }
-pydantic = "^2.11.7"
+pydantic = { extras = ["email"], version = "^2.11.7" }
 pydantic-settings = "^2.10.1"
 sqlalchemy = "^2.0.44"
 asyncpg = "^0.30.0"
 aiosqlite = "^0.21.0"
 alembic = "^1.16.5"
-python-jose = { extras = ["cryptography"], version = "^3.5.0" }
-passlib = { extras = ["argon2"], version = "^1.7.4" }
 strawberry-graphql = { extras = ["fastapi"], version = "^0.282.0" }
 httpx = "^0.28.1"
 python-multipart = "^0.0.20"
@@ -28,8 +26,6 @@ pytest = "^8.4.2"
 pytest-asyncio = "^1.2.0"
 ruff = "^0.13.2"
 mypy = "^1.18.2"
-types-passlib = "^1.7.7.20250602"
-types-python-jose = "^3.5.0.20250531"
 
 [tool.ruff]
 line-length = 100

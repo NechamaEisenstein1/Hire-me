@@ -1,0 +1,39 @@
+<div class="resume3d-page">
+  <section class="resume3d-shell">
+    <div class="resume3d-header">
+      <div>
+        <h2 class="resume3d-title">3D Interactive Resume</h2>
+        <p class="resume3d-subtitle">
+          @if (loading()) { Loading resume data… }
+          @else if (!error()) { Click the card to flip · hover to tilt }
+        </p>
+      </div>
+
+      <a routerLink="/resume-studio" class="resume3d-link">Full Resume →</a>
+    </div>
+
+    @if (error()) {
+      <div class="resume3d-error">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="resume3d-loading" aria-hidden="true"></div>
+    }
+
+    <div
+      #canvasHost
+      class="resume3d-canvas"
+      [class.hidden]="loading() || !!error()"
+      (click)="flipCard()"
+      (keydown.enter)="flipCard()"
+      (keydown.space)="flipCard()"
+      role="button"
+      tabindex="0"
+      aria-label="3D resume card — press Enter or Space to flip"
+    ></div>
+
+    @if (!loading() && !error()) {
+      <p class="resume3d-hint">{{ flipped() ? '← front' : 'back →' }} click to flip</p>
+    }
+  </section>
+</div>

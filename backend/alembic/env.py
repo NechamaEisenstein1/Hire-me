@@ -12,7 +12,6 @@ from app.db.base import Base
 from app.db.models.chat_message import ChatMessage
 from app.db.models.chat_session import ChatSession
 from app.db.models.project import Project
-from app.db.models.user import User
 from app.db.models.visitor_event import VisitorEvent
 
 config = context.config

@@ -1,0 +1,150 @@
+<section id="about" class="hero-section">
+  @if (profile(); as model) {
+    <div class="hero-avatar">{{ initials(model.name) }}</div>
+    <p class="hero-kicker">{{ model.title }}</p>
+    <h1 class="hero-name">{{ model.name }}</h1>
+    <p class="hero-summary">{{ model.summary }}</p>
+    <p class="hero-meta">
+      <span>{{ model.location }}</span>
+      <span aria-hidden="true">·</span>
+      <a [attr.href]="'mailto:' + model.email">{{ model.email }}</a>
+      @if (model.githubUsername) {
+        <span aria-hidden="true">·</span>
+        <a [href]="'https://github.com/' + model.githubUsername" target="_blank" rel="noopener noreferrer">
+          github.com/{{ model.githubUsername }}
+        </a>
+      }
+    </p>
+    <div class="hero-actions">
+      <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="action-primary">Download Resume</a>
+      <a routerLink="/interview-me" class="action-secondary">Interview Me →</a>
+    </div>
+    <div class="hero-owner-link-wrap">
+      <a routerLink="/owner-admin" class="hero-owner-link">Owner Panel</a>
+    </div>
+  } @else {
+    <p class="muted-loading">{{ loadingMessage() }}</p>
+  }
+</section>
+
+@if (profile(); as model) {
+  <section id="skills" class="section section-soft">
+    <div class="section-inner section-inner-narrow">
+      <p class="section-kicker">Toolkit</p>
+      <h2 class="section-title">Technical Skills</h2>
+      <div class="chip-row">
+        @for (skill of model.skills; track skill) {
+          <span class="skill-chip">{{ skill }}</span>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section id="projects" class="section">
+    <div class="section-inner section-inner-wide">
+      <p class="section-kicker">Work</p>
+      <h2 class="section-title">Projects</h2>
+      @if (githubReposLoading()) {
+        <p class="muted-loading">Loading GitHub projects...</p>
+      } @else if (githubRepos().length > 0) {
+        <div class="card-grid card-grid-projects">
+          @for (repo of githubRepos(); track repo.id) {
+            <a [href]="repo.html_url" target="_blank" rel="noopener noreferrer" class="content-card">
+              <h3 class="content-card-title content-card-title-accent">{{ repo.name }}</h3>
+              @if (repo.description) {
+                <p class="content-card-text">{{ repo.description }}</p>
+              } @else {
+                <p class="content-card-text content-card-text-muted">No description</p>
+              }
+              <div class="repo-meta-row">
+                @if (repo.language) {
+                  <span class="repo-language">{{ repo.language }}</span>
+                }
+                @if (repo.stargazers_count > 0) {
+                  <span class="repo-stars">★ {{ repo.stargazers_count }}</span>
+                }
+              </div>
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="card-grid card-grid-projects">
+          @for (project of model.projects; track project.name) {
+            <article class="content-card">
+              <h3 class="content-card-title">{{ project.name }}</h3>
+              <p class="content-card-text">{{ project.summary }}</p>
+              @if (project.stack.length > 0) {
+                <div class="tag-row">
+                  @for (tech of project.stack; track tech) {
+                    <span class="repo-language">{{ tech }}</span>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <section id="experience" class="section section-soft">
+    <div class="section-inner section-inner-narrow">
+      <p class="section-kicker">Career</p>
+      <h2 class="section-title">Experience</h2>
+      <div class="timeline-wrap">
+        <span class="timeline-line" aria-hidden="true"></span>
+        <div class="timeline-list">
+          @for (job of model.experience; track job.role + job.company) {
+            <article class="timeline-item">
+              <span class="timeline-dot" aria-hidden="true"></span>
+              <div class="timeline-card">
+                <div class="timeline-head">
+                  <div>
+                    <h3 class="content-card-title">{{ job.role }}</h3>
+                    <p class="company-name">{{ job.company }}</p>
+                  </div>
+                  <span class="timeline-period">{{ job.period }}</span>
+                </div>
+                @if (job.highlights.length > 0) {
+                  <ul class="highlight-list">
+                    @for (line of job.highlights; track line) {
+                      <li class="highlight-item">{{ line }}</li>
+                    }
+                  </ul>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="resume" class="section section-center">
+    <div class="section-inner section-inner-small section-center-block">
+      <p class="section-kicker">CV</p>
+      <h2 class="section-title">Resume</h2>
+      <p class="section-copy">
+        Download the PDF or open the interactive Resume Studio for the full career timeline, skills, and project details.
+      </p>
+      <div class="hero-actions">
+        <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="action-primary">Download PDF</a>
+        <a routerLink="/resume-studio" class="action-secondary">Resume Studio</a>
+        <a routerLink="/resume-3d" class="action-emerald">3D Resume ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="section section-contact">
+    <p class="section-kicker section-kicker-light">Let's Talk</p>
+    <h2 class="section-title section-title-light">Want to Know More?</h2>
+    <p class="section-copy section-copy-light">
+      Ask me directly about my experience, technical decisions, architecture tradeoffs,
+      and delivery approach — powered by AI.
+    </p>
+    <div class="hero-actions">
+      <a routerLink="/interview-me" class="action-interview">Start Interview →</a>
+      <a [attr.href]="'mailto:' + model.email" class="action-mail">Email Me</a>
+    </div>
+  </section>
+}
