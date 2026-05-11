@@ -1,0 +1,75 @@
+{
+  "configVersion": 1,
+  "timestamp": 1778518464327,
+  "index": "/Hire-me/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/Hire-me/chunk-3GPUVUR6.js",
+        "/Hire-me/chunk-C3GRVDOV.js",
+        "/Hire-me/index.html",
+        "/Hire-me/main-GBKPFY6Z.js",
+        "/Hire-me/polyfills-FFHMD2TL.js",
+        "/Hire-me/styles-VAZRZ4I7.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/Hire-me/public/404.html",
+        "/Hire-me/public/manifest.webmanifest",
+        "/Hire-me/public/my-resume.pdf",
+        "/Hire-me/public/my-resume.txt",
+        "/Hire-me/public/resume-template.json",
+        "/Hire-me/public/robots.txt"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/Hire-me/chunk-3GPUVUR6.js": "5097dcdccc3e2d08da48a2ebc051d72356c0b7f2",
+    "/Hire-me/chunk-C3GRVDOV.js": "cefc2c16d6d8d276ed4b4bef546aebf3da9ab23f",
+    "/Hire-me/index.html": "67c92a395ae90545147c01f989f7ad4c21ef8824",
+    "/Hire-me/main-GBKPFY6Z.js": "f7df66b2ef697d408ed19b11a04c389e6d053c6d",
+    "/Hire-me/polyfills-FFHMD2TL.js": "f49b49a155bc7d192db62a4c15d0a612b460a667",
+    "/Hire-me/public/404.html": "7a6fa82cf02c70e61d60a0b033d45c2da8c5faf0",
+    "/Hire-me/public/manifest.webmanifest": "d54b08326346b7eca795a6ba03951aefb0f97b73",
+    "/Hire-me/public/my-resume.pdf": "b87bd1b9a3e663d2bb1e4820396dbdfe3d946231",
+    "/Hire-me/public/my-resume.txt": "2d56a014bbeb5fe3cc0caccb0464e28fb51a6e9e",
+    "/Hire-me/public/resume-template.json": "f34d106dee4b62b11b2700cd73e57bae1f415632",
+    "/Hire-me/public/robots.txt": "c87003668ea52a5fa648d3d4f74f7c122ab33c21",
+    "/Hire-me/styles-VAZRZ4I7.css": "1a6d7f4d11fd44a38c83fb6b36386b4e378ef958"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
