@@ -1,22 +1,11 @@
-import { AfterViewChecked, AfterViewInit, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { ApiService } from '../../core/services/api.service';
+import { GitHubRepo, GitHubService } from '../../core/services/github.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
 import { ParsedResume } from '../resume-studio/resume-parser';
-
-type GitHubRepo = {
-  id: number;
-  name: string;
-  description: string | null;
-  html_url: string;
-  language: string | null;
-  stargazers_count: number;
-  updated_at: string;
-  fork: boolean;
-  archived: boolean;
-};
 
 @Component({
   standalone: true,
@@ -24,10 +13,19 @@ type GitHubRepo = {
   templateUrl: './home.page.html',
   styleUrl: './home.page.css',
 })
-export class HomePage implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy {
+export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly github = inject(GitHubService);
   private readonly shellStore = inject(AppShellStore);
+
+  constructor() {
+    effect(() => {
+      if (this.profile() !== null) {
+        Promise.resolve().then(() => this.observeAvailableSections());
+      }
+    });
+  }
 
   private sectionObserver: IntersectionObserver | null = null;
   private readonly observedSectionIds = new Set<string>();
@@ -54,10 +52,6 @@ export class HomePage implements OnInit, AfterViewInit, AfterViewChecked, OnDest
       },
       { rootMargin: '-20% 0px -60% 0px', threshold: 0 },
     );
-    this.observeAvailableSections();
-  }
-
-  ngAfterViewChecked(): void {
     this.observeAvailableSections();
   }
 
@@ -116,20 +110,12 @@ export class HomePage implements OnInit, AfterViewInit, AfterViewChecked, OnDest
     const timeoutId = globalThis.setTimeout(() => this.githubReposAbortController?.abort(), 8000);
 
     try {
-      const username = this.profile()?.githubUsername ?? 'NechamaEisenstein1';
-      const response = await fetch(
-        `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`,
-        { signal: this.githubReposAbortController.signal },
-      );
-      if (!response.ok) {
-        throw new Error(`GitHub API ${response.status}`);
+      const username = await this.github.resolveUsername(this.profile()?.githubUsername);
+      if (!username) {
+        return;
       }
-      const all = (await response.json()) as GitHubRepo[];
-      const owned = all
-        .filter((repo) => !repo.fork && !repo.archived)
-        .sort((a, b) => b.stargazers_count - a.stargazers_count || b.updated_at.localeCompare(a.updated_at))
-        .slice(0, 12);
-      this.githubRepos.set(owned.length > 0 ? owned : all.filter((repo) => !repo.archived).slice(0, 12));
+      const repos = await this.github.fetchRepos(username, this.githubReposAbortController.signal);
+      this.githubRepos.set(repos);
     } catch {
       // GitHub unavailable — fallback to resume projects shown in template
     } finally {

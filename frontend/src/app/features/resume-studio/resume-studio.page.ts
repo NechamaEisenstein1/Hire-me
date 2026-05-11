@@ -3,23 +3,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
+import { GitHubRepo, GitHubService } from '../../core/services/github.service';
 import { ParsedResume } from './resume-parser';
-
-type GitHubRepo = {
-  id: number;
-  name: string;
-  description: string | null;
-  html_url: string;
-  language: string | null;
-  stargazers_count: number;
-  updated_at: string;
-  fork: boolean;
-  archived: boolean;
-};
-
-type GitHubStatsResponse = {
-  username: string;
-};
 
 @Component({
   standalone: true,
@@ -30,6 +15,7 @@ type GitHubStatsResponse = {
 export class ResumeStudioPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
+  private readonly github = inject(GitHubService);
   private githubReposAbortController: AbortController | null = null;
 
   readonly now = new Date();
@@ -66,46 +52,18 @@ export class ResumeStudioPage implements OnInit {
     const timeoutId = globalThis.setTimeout(() => this.githubReposAbortController?.abort(), 8000);
 
     try {
-      const username = await this.resolveGithubUsername();
+      const username = await this.github.resolveUsername(this.resume()?.githubUsername);
       if (!username) {
         return;
       }
-
-      const response = await fetch(
-        `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`,
-        { signal: this.githubReposAbortController.signal }
-      );
-      if (!response.ok) {
-        throw new Error(`GitHub API ${response.status}`);
-      }
-
-      const repos = (await response.json()) as GitHubRepo[];
-      const ranked = repos
-        .filter((repo) => !repo.fork && !repo.archived)
-        .sort((a, b) => b.stargazers_count - a.stargazers_count || b.updated_at.localeCompare(a.updated_at))
-        .slice(0, 12);
-
-      this.githubRepos.set(ranked.length > 0 ? ranked : repos.filter((repo) => !repo.archived).slice(0, 12));
+      const repos = await this.github.fetchRepos(username, this.githubReposAbortController.signal);
+      this.githubRepos.set(repos);
     } catch {
       // Keep resume profile projects as fallback when GitHub is unavailable.
     } finally {
       globalThis.clearTimeout(timeoutId);
       this.githubReposLoading.set(false);
       this.githubReposAbortController = null;
-    }
-  }
-
-  private async resolveGithubUsername(): Promise<string | null> {
-    const fromProfile = this.resume()?.githubUsername?.trim();
-    if (fromProfile) {
-      return fromProfile;
-    }
-
-    try {
-      const stats = await this.api.get<GitHubStatsResponse>('/api/v1/github/stats');
-      return stats.username?.trim() || null;
-    } catch {
-      return null;
     }
   }
 
