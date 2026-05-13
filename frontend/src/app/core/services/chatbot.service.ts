@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 
+import { ApiError } from './api.service';
 import { ApiService } from './api.service';
 
 type ChatResponse = {
@@ -30,7 +31,11 @@ export class ChatbotService {
         question: normalizedQuestion
       });
       return response.answer;
-    } catch {
+    } catch (error: unknown) {
+      // Rethrow rate-limit errors so the UI can display them directly.
+      if (error instanceof ApiError && error.status === 429) {
+        throw error;
+      }
       const fallbackProfile = await this.loadFallbackProfile();
       return this.buildLocalFallbackAnswer(normalizedQuestion, fallbackProfile, language);
     }

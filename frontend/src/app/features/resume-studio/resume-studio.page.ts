@@ -3,7 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { GitHubRepo, GitHubService } from '../../core/services/github.service';
+import { Project, ProjectsService } from '../../core/services/projects.service';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -15,28 +15,28 @@ import { ParsedResume } from './resume-parser';
 export class ResumeStudioPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
-  private readonly github = inject(GitHubService);
-  private githubReposAbortController: AbortController | null = null;
+  private readonly projectsService = inject(ProjectsService);
 
   readonly now = new Date();
   readonly resume = signal<ParsedResume | null>(null);
   readonly statusMessage = signal('Loading public resume profile...');
-  readonly githubRepos = signal<GitHubRepo[]>([]);
-  readonly githubReposLoading = signal(true);
+  readonly projects = signal<Project[]>([]);
+  readonly projectsLoading = signal(true);
 
   readonly stats = computed(() => {
     const model = this.resume();
+    const dbProjects = this.projects();
     return {
       skills: model?.skills.length ?? 0,
       experience: model?.experience.length ?? 0,
-      projects: model?.projects.length ?? 0,
+      projects: dbProjects.length > 0 ? dbProjects.length : (model?.projects.length ?? 0),
       education: model?.education.length ?? 0
     };
   });
 
   async ngOnInit(): Promise<void> {
     await this.loadPublicResumeProfile();
-    void this.loadGithubRepos();
+    void this.loadProjects();
   }
 
   trackResumeDownload(): void {
@@ -45,25 +45,14 @@ export class ResumeStudioPage implements OnInit {
     });
   }
 
-  private async loadGithubRepos(): Promise<void> {
-    this.githubReposLoading.set(true);
-    this.githubReposAbortController?.abort();
-    this.githubReposAbortController = new AbortController();
-    const timeoutId = globalThis.setTimeout(() => this.githubReposAbortController?.abort(), 8000);
-
+  private async loadProjects(): Promise<void> {
     try {
-      const username = await this.github.resolveUsername(this.resume()?.githubUsername);
-      if (!username) {
-        return;
-      }
-      const repos = await this.github.fetchRepos(username, this.githubReposAbortController.signal);
-      this.githubRepos.set(repos);
+      const data = await this.projectsService.getProjects();
+      this.projects.set(data);
     } catch {
-      // Keep resume profile projects as fallback when GitHub is unavailable.
+      // Keep resume profile projects as fallback when DB is unavailable.
     } finally {
-      globalThis.clearTimeout(timeoutId);
-      this.githubReposLoading.set(false);
-      this.githubReposAbortController = null;
+      this.projectsLoading.set(false);
     }
   }
 

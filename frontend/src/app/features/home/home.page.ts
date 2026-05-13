@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { ApiService } from '../../core/services/api.service';
-import { GitHubRepo, GitHubService } from '../../core/services/github.service';
+import { Project, ProjectsService } from '../../core/services/projects.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
 import { ParsedResume } from '../resume-studio/resume-parser';
 
@@ -16,7 +16,7 @@ import { ParsedResume } from '../resume-studio/resume-parser';
 export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
-  private readonly github = inject(GitHubService);
+  private readonly projectsService = inject(ProjectsService);
   private readonly shellStore = inject(AppShellStore);
 
   constructor() {
@@ -29,16 +29,15 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
   private sectionObserver: IntersectionObserver | null = null;
   private readonly observedSectionIds = new Set<string>();
-  private githubReposAbortController: AbortController | null = null;
 
   readonly profile = signal<ParsedResume | null>(null);
   readonly loadingMessage = signal('Loading profile...');
-  readonly githubRepos = signal<GitHubRepo[]>([]);
-  readonly githubReposLoading = signal(true);
+  readonly projects = signal<Project[]>([]);
+  readonly projectsLoading = signal(true);
 
   async ngOnInit(): Promise<void> {
     await this.loadProfile();
-    void this.loadGithubRepos();
+    void this.loadProjects();
   }
 
   ngAfterViewInit(): void {
@@ -57,7 +56,6 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sectionObserver?.disconnect();
-    this.githubReposAbortController?.abort();
   }
 
   initials(name: string): string {
@@ -104,24 +102,14 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private async loadGithubRepos(): Promise<void> {
-    this.githubReposAbortController?.abort();
-    this.githubReposAbortController = new AbortController();
-    const timeoutId = globalThis.setTimeout(() => this.githubReposAbortController?.abort(), 8000);
-
+  private async loadProjects(): Promise<void> {
     try {
-      const username = await this.github.resolveUsername(this.profile()?.githubUsername);
-      if (!username) {
-        return;
-      }
-      const repos = await this.github.fetchRepos(username, this.githubReposAbortController.signal);
-      this.githubRepos.set(repos);
+      const data = await this.projectsService.getProjects();
+      this.projects.set(data);
     } catch {
-      // GitHub unavailable — fallback to resume projects shown in template
+      // Fallback: resume profile projects shown in template
     } finally {
-      globalThis.clearTimeout(timeoutId);
-      this.githubReposLoading.set(false);
-      this.githubReposAbortController = null;
+      this.projectsLoading.set(false);
     }
   }
 }
