@@ -12,5 +12,11 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSO
     """Handle rate limit exceeded errors with proper 429 response."""
     return JSONResponse(
         status_code=429,
-        content={"detail": "Rate limit exceeded. You have been rate limited."},
+        content={
+            "detail": (
+                "You have reached the daily message limit. "
+                "Please try again tomorrow. | "
+                "הגעת למגבלת ההודעות היומית. אפשר לנסות שוב מחר."
+            )
+        },
     )

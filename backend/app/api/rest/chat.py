@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.config import get_settings
+from app.core.rate_limit import limiter
 from app.services.ai_chat_service import (
     AIProviderRequestError,
     AIProviderResponseError,
@@ -13,6 +15,9 @@ from app.services.resume_profile_service import (
 )
 
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+
+_settings = get_settings()
+_CHAT_DAILY_LIMIT = f"{_settings.chat_daily_limit}/day"
 
 
 class ChatRequest(BaseModel):
@@ -34,7 +39,8 @@ class ChatResponse(BaseModel):
 
 
 @router.post('/messages', response_model=ChatResponse)
-async def chat(payload: ChatRequest) -> ChatResponse:
+@limiter.limit(_CHAT_DAILY_LIMIT)
+async def chat(request: Request, payload: ChatRequest) -> ChatResponse:
     profile_context = ""
     try:
         profile_context = build_resume_profile_context(get_resume_profile())

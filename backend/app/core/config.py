@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     jwt_refresh_token_expires_days: int = 30
 
     rate_limit_requests_per_minute: int = 120
+    chat_daily_limit: int = 5
 
     cors_origins: list[str] | str = "http://localhost:4200"
 
@@ -27,6 +28,7 @@ class Settings(BaseSettings):
 
     github_username: str = ""
     github_token: str = ""
+    github_repos_cache_seconds: int = 300
 
     ai_provider: str = "gemini"
     gemini_base_url: str = "https://generativelanguage.googleapis.com"

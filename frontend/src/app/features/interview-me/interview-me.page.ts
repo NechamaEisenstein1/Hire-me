@@ -15,6 +15,9 @@ import { ChatbotService } from '../../core/services/chatbot.service';
         <textarea [(ngModel)]="question" rows="4" class="w-full rounded-lg border border-brand-300 bg-white p-3 dark:border-brand-700 dark:bg-brand-950/60" placeholder="Ask about architecture decisions, tradeoffs, and delivery." [disabled]="isLoading()" [attr.dir]="containsHebrew(question) ? 'rtl' : 'ltr'" [class.text-right]="containsHebrew(question)" [class.text-left]="!containsHebrew(question)"></textarea>
         <button type="button" (click)="ask()" class="w-fit rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canAsk()">{{ isLoading() ? 'Thinking...' : 'Ask AI' }}</button>
       </div>
+      <p class="mt-3 text-xs text-brand-400 dark:text-brand-500 opacity-70">
+        Usage is limited to 5 messages per IP per day to prevent abuse. | השימוש מוגבל ל-5 הודעות ביום לכל IP כדי למנוע ניצול לרעה.
+      </p>
       <div class="mt-4 rounded-xl border border-brand-200/70 bg-white/70 p-4 dark:border-brand-700/60 dark:bg-brand-950/30" [attr.dir]="answerDirection()" [class.text-right]="answerDirection() === 'rtl'" [class.text-left]="answerDirection() === 'ltr'">
         <p class="m-0 whitespace-pre-wrap leading-8" [class.text-red-600]="isError()" [class.dark:text-red-300]="isError()">{{ answer() }}</p>
       </div>
@@ -50,7 +53,12 @@ export class InterviewMePage {
       const response = await this.chatbot.ask(prompt);
       this.setAnswerMessage(response, false);
     } catch (error: unknown) {
-      if (error instanceof ApiError) {
+      if (error instanceof ApiError && error.status === 429) {
+        this.setAnswerMessage(
+          'You have reached the daily message limit (5/day). Please try again tomorrow. | הגעת למגבלת ההודעות היומית (5 ביום). אפשר לנסות שוב מחר.',
+          true
+        );
+      } else if (error instanceof ApiError) {
         this.setAnswerMessage(
           error.message?.trim() || 'Unable to get a response right now. Please try again in a moment.',
           true

@@ -44,27 +44,21 @@
     <div class="section-inner section-inner-wide">
       <p class="section-kicker">Work</p>
       <h2 class="section-title">Projects</h2>
-      @if (githubReposLoading()) {
-        <p class="muted-loading">Loading GitHub projects...</p>
-      } @else if (githubRepos().length > 0) {
+      @if (projectsLoading()) {
+        <p class="muted-loading">Loading projects...</p>
+      } @else if (projects().length > 0) {
         <div class="card-grid card-grid-projects">
-          @for (repo of githubRepos(); track repo.id) {
-            <a [href]="repo.html_url" target="_blank" rel="noopener noreferrer" class="content-card">
-              <h3 class="content-card-title content-card-title-accent">{{ repo.name }}</h3>
-              @if (repo.description) {
-                <p class="content-card-text">{{ repo.description }}</p>
-              } @else {
-                <p class="content-card-text content-card-text-muted">No description</p>
-              }
-              <div class="repo-meta-row">
-                @if (repo.language) {
-                  <span class="repo-language">{{ repo.language }}</span>
-                }
-                @if (repo.stargazers_count > 0) {
-                  <span class="repo-stars">★ {{ repo.stargazers_count }}</span>
+          @for (project of projects(); track project.id) {
+            <article class="content-card">
+              <h3 class="content-card-title content-card-title-accent">{{ project.title }}</h3>
+              <p class="content-card-text">{{ project.summary }}</p>
+              <div class="tag-row">
+                <a [href]="project.repo_url" target="_blank" rel="noopener noreferrer" class="repo-language">Code ↗</a>
+                @if (project.live_url) {
+                  <a [href]="project.live_url" target="_blank" rel="noopener noreferrer" class="repo-language">Live ↗</a>
                 }
               </div>
-            </a>
+            </article>
           }
         </div>
       } @else {

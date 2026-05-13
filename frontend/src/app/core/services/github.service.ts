@@ -41,22 +41,10 @@ export class GitHubService {
   }
 
   /**
-   * Fetches and ranks repos for a given username, returning up to 12 results.
-   * Prefers non-fork, non-archived repos sorted by stars then recency.
+   * Fetches ranked repos via the backend proxy (uses server-side token + TTL cache).
+   * Avoids direct browser→GitHub calls that are subject to rate limiting.
    */
-  async fetchRepos(username: string, signal?: AbortSignal): Promise<GitHubRepo[]> {
-    const response = await fetch(
-      `https://api.github.com/users/${username}/repos?per_page=100&sort=updated&type=owner`,
-      { signal },
-    );
-    if (!response.ok) {
-      throw new Error(`GitHub API ${response.status}`);
-    }
-    const all = (await response.json()) as GitHubRepo[];
-    const ranked = all
-      .filter((repo) => !repo.fork && !repo.archived)
-      .sort((a, b) => b.stargazers_count - a.stargazers_count || b.updated_at.localeCompare(a.updated_at))
-      .slice(0, 12);
-    return ranked.length > 0 ? ranked : all.filter((repo) => !repo.archived).slice(0, 12);
+  async fetchRepos(): Promise<GitHubRepo[]> {
+    return this.api.get<GitHubRepo[]>('/api/v1/github/repos');
   }
 }
