@@ -49,13 +49,16 @@
       } @else if (projects().length > 0) {
         <div class="card-grid card-grid-projects">
           @for (project of projects(); track project.id) {
-            <a [href]="project.repo_url" target="_blank" rel="noopener noreferrer" class="content-card">
+            <article class="content-card">
               <h3 class="content-card-title content-card-title-accent">{{ project.title }}</h3>
               <p class="content-card-text">{{ project.summary }}</p>
-              @if (project.live_url) {
-                <a [href]="project.live_url" target="_blank" rel="noopener noreferrer" class="repo-language" (click)="$event.stopPropagation()">Live ↗</a>
-              }
-            </a>
+              <div class="tag-row">
+                <a [href]="project.repo_url" target="_blank" rel="noopener noreferrer" class="repo-language">Code ↗</a>
+                @if (project.live_url) {
+                  <a [href]="project.live_url" target="_blank" rel="noopener noreferrer" class="repo-language">Live ↗</a>
+                }
+              </div>
+            </article>
           }
         </div>
       } @else {

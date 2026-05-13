@@ -44,7 +44,7 @@ export class GitHubService {
    * Fetches ranked repos via the backend proxy (uses server-side token + TTL cache).
    * Avoids direct browser→GitHub calls that are subject to rate limiting.
    */
-  async fetchRepos(signal?: AbortSignal): Promise<GitHubRepo[]> {
-    return this.api.get<GitHubRepo[]>('/api/v1/github/repos', { signal });
+  async fetchRepos(): Promise<GitHubRepo[]> {
+    return this.api.get<GitHubRepo[]>('/api/v1/github/repos');
   }
 }
