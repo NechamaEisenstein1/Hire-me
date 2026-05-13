@@ -12,17 +12,6 @@ class HealthType:
 
 
 @strawberry.type
-class ProjectType:
-    id: int
-    slug: str
-    title: str
-    summary: str
-    repo_url: str
-    live_url: str | None
-    featured: bool
-
-
-@strawberry.type
 class GitHubStatsType:
     username: str
     public_repos: int
