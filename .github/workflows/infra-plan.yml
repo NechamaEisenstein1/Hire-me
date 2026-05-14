@@ -75,7 +75,7 @@ jobs:
         run: terraform fmt -check
       - name: Init
         working-directory: infra/terraform
-        run: terraform init -input=false
+        run: terraform init -input=false -backend=false
       - name: Validate
         working-directory: infra/terraform
         run: terraform validate
