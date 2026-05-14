@@ -1,0 +1,71 @@
+name: Deploy Frontend to S3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build -- --configuration production
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync frontend/dist/hire-me-frontend/browser/ \
+            s3://hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}/ \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "index.html"
+          # index.html should not be cached
+          aws s3 cp frontend/dist/hire-me-frontend/browser/index.html \
+            s3://hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}/index.html \
+            --cache-control "no-cache,no-store,must-revalidate"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          DIST_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[0].DomainName=='hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}.s3.eu-north-1.amazonaws.com'].Id" \
+            --output text)
+          aws cloudfront create-invalidation \
+            --distribution-id "$DIST_ID" \
+            --paths "/*"
+
+      - name: Print site URL
+        run: |
+          DOMAIN=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Origins.Items[0].DomainName=='hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}.s3.eu-north-1.amazonaws.com'].DomainName" \
+            --output text)
+          echo "### Site URL" >> $GITHUB_STEP_SUMMARY
+          echo "https://$DOMAIN" >> $GITHUB_STEP_SUMMARY
