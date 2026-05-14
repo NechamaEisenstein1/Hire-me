@@ -49,20 +49,23 @@ jobs:
           TF_VAR_aws_account_id: ${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}
         run: |
           # Import resources that may already exist in AWS but are not yet in Terraform state
-          terraform state list | grep -q 'aws_s3_bucket.frontend' || \
+          if ! terraform state list | grep -q 'aws_s3_bucket.frontend'; then
             terraform import aws_s3_bucket.frontend \
-              "hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}"
+              "hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}" || true
+          fi
 
-          terraform state list | grep -q 'aws_db_subnet_group.main' || \
-            terraform import aws_db_subnet_group.main hire-me-db-subnet-group-dev
+          if ! terraform state list | grep -q 'aws_db_subnet_group.main'; then
+            terraform import aws_db_subnet_group.main hire-me-db-subnet-group-dev || true
+          fi
 
-          terraform state list | grep -q 'aws_cloudfront_origin_access_control.frontend' || {
+          if ! terraform state list | grep -q 'aws_cloudfront_origin_access_control.frontend'; then
             OAC_ID=$(aws cloudfront list-origin-access-controls \
               --query "OriginAccessControlList.Items[?Name=='hire-me-frontend-oac'].Id" \
               --output text)
-            [ -n "$OAC_ID" ] && [ "$OAC_ID" != "None" ] && \
+            if [ -n "$OAC_ID" ] && [ "$OAC_ID" != "None" ]; then
               terraform import aws_cloudfront_origin_access_control.frontend "$OAC_ID"
-          }
+            fi
+          fi
 
       - name: Terraform Plan
         working-directory: infra/terraform

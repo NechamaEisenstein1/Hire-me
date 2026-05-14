@@ -43,13 +43,18 @@ jobs:
 
       - name: Sync to S3
         run: |
-          aws s3 sync frontend/dist/hire-me-frontend/browser/ \
+          BUILD_DIR="frontend/dist/hire-me-frontend/browser"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "Build output directory '$BUILD_DIR' not found. Aborting deploy."
+            exit 1
+          fi
+          aws s3 sync "$BUILD_DIR/" \
             s3://hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}/ \
             --delete \
             --cache-control "public,max-age=31536000,immutable" \
             --exclude "index.html"
           # index.html should not be cached
-          aws s3 cp frontend/dist/hire-me-frontend/browser/index.html \
+          aws s3 cp "$BUILD_DIR/index.html" \
             s3://hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}/index.html \
             --cache-control "no-cache,no-store,must-revalidate"
 
@@ -58,6 +63,10 @@ jobs:
           DIST_ID=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[?Origins.Items[0].DomainName=='hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}.s3.eu-north-1.amazonaws.com'].Id" \
             --output text)
+          if [ -z "$DIST_ID" ] || [ "$DIST_ID" = "None" ]; then
+            echo "No CloudFront distribution found; skipping invalidation."
+            exit 0
+          fi
           aws cloudfront create-invalidation \
             --distribution-id "$DIST_ID" \
             --paths "/*"
@@ -67,5 +76,9 @@ jobs:
           DOMAIN=$(aws cloudfront list-distributions \
             --query "DistributionList.Items[?Origins.Items[0].DomainName=='hire-me-frontend-dev-${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}.s3.eu-north-1.amazonaws.com'].DomainName" \
             --output text)
-          echo "### Site URL" >> $GITHUB_STEP_SUMMARY
-          echo "https://$DOMAIN" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$DOMAIN" ] && [ "$DOMAIN" != "None" ]; then
+            echo "### Site URL" >> $GITHUB_STEP_SUMMARY
+            echo "https://$DOMAIN" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Could not determine CloudFront domain."
+          fi
