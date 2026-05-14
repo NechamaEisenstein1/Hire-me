@@ -81,6 +81,15 @@ jobs:
           docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
           docker push $REGISTRY/$IMAGE_NAME:latest
 
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster hire-me-cluster \
+            --service hire-me-backend-dev \
+            --force-new-deployment \
+            --output text \
+            --query 'service.serviceName'
+
   push-frontend:
     needs: preflight
     if: ${{ needs.preflight.outputs.frontend_changed == 'true' }}
