@@ -40,7 +40,7 @@ resource "aws_db_instance" "postgres" {
   publicly_accessible                 = false
   storage_encrypted                   = true
   storage_type                        = "gp3"
-  backup_retention_period             = var.environment == "prod" ? 30 : 7
+  backup_retention_period             = var.environment == "prod" ? 30 : 0
   skip_final_snapshot                 = var.environment == "prod" ? false : true
   final_snapshot_identifier           = var.environment == "prod" ? "${var.project_name}-postgres-${var.environment}-final" : null
   deletion_protection                 = var.environment == "prod" ? true : false
