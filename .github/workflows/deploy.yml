@@ -81,6 +81,22 @@ jobs:
           docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
           docker push $REGISTRY/$IMAGE_NAME:latest
 
+      - name: Deploy to ECS
+        # Task definition already pins :latest on a MUTABLE ECR repo, so
+        # --force-new-deployment is enough to pull the image we just pushed.
+        run: |
+          aws ecs update-service \
+            --cluster hire-me-cluster \
+            --service hire-me-backend-dev \
+            --force-new-deployment \
+            --output text \
+            --query 'service.serviceName'
+
+          echo "Waiting for service to stabilize (up to 10 min)..."
+          aws ecs wait services-stable \
+            --cluster hire-me-cluster \
+            --services hire-me-backend-dev
+
   push-frontend:
     needs: preflight
     if: ${{ needs.preflight.outputs.frontend_changed == 'true' }}
