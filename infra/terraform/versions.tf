@@ -9,9 +9,9 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "hire-me-terraform-state-295552411541"
-    key            = "hire-me/dev/terraform.tfstate"
-    region         = "eu-north-1"
+    bucket       = "hire-me-terraform-state-295552411541"
+    key          = "hire-me/dev/terraform.tfstate"
+    region       = "eu-north-1"
     encrypt      = true
     use_lockfile = true
   }
