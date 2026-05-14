@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: deploy-ecr
+  cancel-in-progress: true
+
 jobs:
   preflight:
     runs-on: ubuntu-latest
@@ -52,7 +56,6 @@ jobs:
     if: ${{ needs.preflight.outputs.backend_changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +86,6 @@ jobs:
     if: ${{ needs.preflight.outputs.frontend_changed == 'true' }}
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
