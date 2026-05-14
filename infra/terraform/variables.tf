@@ -51,3 +51,42 @@ variable "aws_account_id" {
   description = "AWS account ID, used to construct globally-unique resource names (e.g. S3 bucket suffix)."
   type        = string
 }
+
+variable "public_subnet_ids" {
+  description = "Public subnet IDs for the Application Load Balancer."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.public_subnet_ids) >= 2
+    error_message = "At least 2 public subnets required for the ALB."
+  }
+}
+
+variable "app_secret_key" {
+  description = "Secret key for JWT signing and session management."
+  type        = string
+  sensitive   = true
+}
+
+variable "gemini_api_key" {
+  description = "Google Gemini API key for AI chat."
+  type        = string
+  sensitive   = true
+}
+
+variable "github_token" {
+  description = "GitHub personal access token for fetching repo data."
+  type        = string
+  sensitive   = true
+}
+
+variable "github_username" {
+  description = "GitHub username whose repos are displayed."
+  type        = string
+}
+
+variable "resume_owner_token" {
+  description = "Token that authorises resume-profile write operations."
+  type        = string
+  sensitive   = true
+}

@@ -76,17 +76,94 @@ data "aws_cloudfront_cache_policy" "managed_caching_optimized" {
   name = "Managed-CachingOptimized"
 }
 
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   default_root_object = "index.html"
   is_ipv6_enabled     = true
 
+  # ── Origin: S3 frontend ───────────────────────────────────────────────────
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
     origin_id                = "frontend-s3-origin"
   }
 
+  # ── Origin: backend ALB ───────────────────────────────────────────────────
+  origin {
+    domain_name = aws_lb.main.dns_name
+    origin_id   = "backend-alb-origin"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  # ── Cache behaviors: API + WebSocket (evaluated before default) ───────────
+  ordered_cache_behavior {
+    path_pattern           = "/api/*"
+    target_origin_id       = "backend-alb-origin"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Authorization", "Content-Type", "Accept", "Origin"]
+      cookies { forward = "all" }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/graphql"
+    target_origin_id       = "backend-alb-origin"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Authorization", "Content-Type", "Accept", "Origin"]
+      cookies { forward = "all" }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  ordered_cache_behavior {
+    path_pattern           = "/ws/*"
+    target_origin_id       = "backend-alb-origin"
+    viewer_protocol_policy = "allow-all"
+    allowed_methods        = ["GET", "HEAD"]
+    cached_methods         = ["GET", "HEAD"]
+    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+      cookies { forward = "all" }
+    }
+
+    min_ttl     = 0
+    default_ttl = 0
+    max_ttl     = 0
+  }
+
+  # ── Default behavior: S3 frontend ─────────────────────────────────────────
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS"]
     cached_methods   = ["GET", "HEAD"]
@@ -96,6 +173,21 @@ resource "aws_cloudfront_distribution" "frontend" {
     compress               = true
 
     cache_policy_id = data.aws_cloudfront_cache_policy.managed_caching_optimized.id
+  }
+
+  # Return index.html for SPA routes that S3 returns 403/404 on
+  custom_error_response {
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
+  }
+
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 0
   }
 
   restrictions {
