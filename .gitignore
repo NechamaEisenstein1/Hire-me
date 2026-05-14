@@ -72,6 +72,7 @@ infra/terraform/override.tf
 infra/terraform/override.tf.json
 infra/terraform/*_override.tf
 infra/terraform/*_override.tf.json
+infra/terraform/terraform.tfvars
 
 # AWS SAM / CDK (if added later)
 .aws-sam/
