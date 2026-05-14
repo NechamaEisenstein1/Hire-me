@@ -80,6 +80,10 @@ data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
 }
 
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   default_root_object = "index.html"
@@ -107,60 +111,35 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   # ── Cache behaviors: API + WebSocket (evaluated before default) ───────────
   ordered_cache_behavior {
-    path_pattern           = "/api/*"
-    target_origin_id       = "backend-alb-origin"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-
-    forwarded_values {
-      query_string = true
-      headers      = ["Authorization", "Content-Type", "Accept", "Origin"]
-      cookies { forward = "all" }
-    }
-
-    min_ttl     = 0
-    default_ttl = 0
-    max_ttl     = 0
+    path_pattern             = "/api/*"
+    target_origin_id         = "backend-alb-origin"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
   ordered_cache_behavior {
-    path_pattern           = "/graphql"
-    target_origin_id       = "backend-alb-origin"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-
-    forwarded_values {
-      query_string = true
-      headers      = ["Authorization", "Content-Type", "Accept", "Origin"]
-      cookies { forward = "all" }
-    }
-
-    min_ttl     = 0
-    default_ttl = 0
-    max_ttl     = 0
+    path_pattern             = "/graphql*"
+    target_origin_id         = "backend-alb-origin"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
+  # WebSocket: redirect-to-https so clients use wss://; AllViewerExceptHostHeader
+  # forwards the Upgrade/Connection headers needed for the WS handshake.
   ordered_cache_behavior {
-    path_pattern           = "/ws/*"
-    target_origin_id       = "backend-alb-origin"
-    viewer_protocol_policy = "allow-all"
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-      cookies { forward = "all" }
-    }
-
-    min_ttl     = 0
-    default_ttl = 0
-    max_ttl     = 0
+    path_pattern             = "/ws/*"
+    target_origin_id         = "backend-alb-origin"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
   }
 
   # ── Default behavior: S3 frontend ─────────────────────────────────────────

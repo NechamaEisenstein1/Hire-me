@@ -74,7 +74,8 @@ jobs:
           fi
 
           if ! terraform state list | grep -q 'aws_ecr_repository.backend'; then
-            terraform import aws_ecr_repository.backend hire-me-backend || true
+            ECR_NAME="${TF_VAR_project_name:-hire-me}-backend"
+            terraform import aws_ecr_repository.backend "$ECR_NAME" || true
           fi
 
       - name: Terraform Plan
