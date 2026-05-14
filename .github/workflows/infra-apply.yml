@@ -83,3 +83,9 @@ jobs:
           TF_VAR_private_subnet_ids: ${{ secrets.TF_VAR_PRIVATE_SUBNET_IDS }}
           TF_VAR_aws_account_id: ${{ secrets.TF_VAR_AWS_ACCOUNT_ID }}
         run: terraform apply -input=false tfplan
+
+      - name: Show outputs
+        working-directory: infra/terraform
+        run: |
+          echo "### Terraform Outputs" >> $GITHUB_STEP_SUMMARY
+          terraform output -no-color >> $GITHUB_STEP_SUMMARY
