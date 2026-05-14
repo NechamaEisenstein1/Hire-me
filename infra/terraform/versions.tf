@@ -7,4 +7,11 @@ terraform {
       version = "~> 5.90"
     }
   }
+
+  backend "s3" {
+    bucket  = "hire-me-terraform-state-295552411541"
+    key     = "hire-me/dev/terraform.tfstate"
+    region  = "eu-north-1"
+    encrypt = true
+  }
 }
