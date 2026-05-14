@@ -1,0 +1,110 @@
+name: Deploy to ECR
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.detect.outputs.backend_changed }}
+      frontend_changed: ${{ steps.detect.outputs.frontend_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        id: detect
+        shell: bash
+        run: |
+          BACKEND_CHANGED=false
+          FRONTEND_CHANGED=false
+
+          BASE_SHA="${{ github.event.before }}"
+          HEAD_SHA="${{ github.sha }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger — build both
+            BACKEND_CHANGED=true
+            FRONTEND_CHANGED=true
+          elif [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            CHANGED_FILES=$(git ls-tree -r --name-only "$HEAD_SHA")
+          else
+            CHANGED_FILES=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          fi
+
+          if printf '%s\n' "${CHANGED_FILES:-}" | grep -q '^backend/'; then
+            BACKEND_CHANGED=true
+          fi
+          if printf '%s\n' "${CHANGED_FILES:-}" | grep -q '^frontend/'; then
+            FRONTEND_CHANGED=true
+          fi
+
+          echo "backend_changed=$BACKEND_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "frontend_changed=$FRONTEND_CHANGED" >> "$GITHUB_OUTPUT"
+
+  push-backend:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.backend_changed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push backend image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_NAME: hire-me-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG -t $REGISTRY/$IMAGE_NAME:latest ./backend
+          docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          docker push $REGISTRY/$IMAGE_NAME:latest
+
+  push-frontend:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.frontend_changed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push frontend image
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_NAME: hire-me-frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG -t $REGISTRY/$IMAGE_NAME:latest ./frontend
+          docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+          docker push $REGISTRY/$IMAGE_NAME:latest
