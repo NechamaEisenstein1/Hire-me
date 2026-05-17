@@ -38,7 +38,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     await this.loadProfile();
-    void this.loadProjects();
+    void this.loadProjects(this.profile()?.githubUsername);
   }
 
   ngAfterViewInit(): void {
@@ -103,21 +103,25 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private async loadProjects(): Promise<void> {
+  private async loadProjects(profileUsername?: string): Promise<void> {
     try {
+      // Resume → GitHub username → repos: only fetch if a username is resolvable.
+      const username = await this.githubService.resolveUsername(profileUsername);
+      if (!username) {
+        return; // no GitHub configured — fallback shown via template
+      }
       const repos = await this.githubService.fetchRepos();
-      const projects: Project[] = repos
-        .filter((r) => !r.fork && !r.archived)
-        .map((r) => ({
-          id: r.id,
-          slug: r.name,
-          title: r.name,
-          summary: r.description ?? '',
-          repo_url: r.html_url,
-          live_url: null,
-          featured: false,
-          created_at: r.updated_at,
-        }));
+      // Backend already filters forks/archived and limits to 12 repos.
+      const projects: Project[] = repos.map((r) => ({
+        id: r.id,
+        slug: r.name,
+        title: r.name,
+        summary: r.description || r.name,
+        repo_url: r.html_url,
+        live_url: r.homepage || null,
+        featured: false,
+        created_at: r.updated_at,
+      }));
       this.projects.set(projects);
     } catch {
       // Fallback: resume profile projects shown in template
