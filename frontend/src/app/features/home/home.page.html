@@ -16,7 +16,7 @@
       }
     </p>
     <div class="hero-actions">
-      <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="action-primary">Download Resume</a>
+      <a [href]="'/public/' + (model.resumeFileName ?? defaultResumeFileName)" [attr.download]="model.resumeFileName ?? defaultResumeFileName" (click)="trackResumeDownload()" class="action-primary">Download Resume</a>
       <a routerLink="/interview-me" class="action-secondary">Interview Me →</a>
     </div>
     <div class="hero-owner-link-wrap">
@@ -122,7 +122,7 @@
         Download the PDF or open the interactive Resume Studio for the full career timeline, skills, and project details.
       </p>
       <div class="hero-actions">
-        <a href="/public/my-resume.pdf" download (click)="trackResumeDownload()" class="action-primary">Download PDF</a>
+        <a [href]="'/public/' + (model.resumeFileName ?? defaultResumeFileName)" [attr.download]="model.resumeFileName ?? defaultResumeFileName" (click)="trackResumeDownload()" class="action-primary">Download PDF</a>
         <a routerLink="/resume-studio" class="action-secondary">Resume Studio</a>
         <a routerLink="/resume-3d" class="action-emerald">3D Resume ↗</a>
       </div>

@@ -23,6 +23,7 @@ export type ParsedResume = {
   location: string;
   email: string;
   githubUsername?: string;
+  resumeFileName?: string;
   summary: string;
   skills: string[];
   experience: ResumeExperience[];

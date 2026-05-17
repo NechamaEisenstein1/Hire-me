@@ -119,6 +119,7 @@ export class OwnerAdminPage {
     this.statusMessage.set(`Parsing ${file.name}...`);
     try {
       const parsed = await parseResumeFile(file);
+      parsed.resumeFileName = file.name;
       this.resume.set(parsed);
       this.statusMessage.set(`Parsed ${file.name}. Review and publish.`);
     } catch (error: unknown) {

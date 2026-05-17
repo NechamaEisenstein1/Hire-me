@@ -3,7 +3,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { Project, ProjectsService } from '../../core/services/projects.service';
+import { GitHubService } from '../../core/services/github.service';
+import { Project } from '../../core/services/projects.service';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -15,13 +16,14 @@ import { ParsedResume } from './resume-parser';
 export class ResumeStudioPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
-  private readonly projectsService = inject(ProjectsService);
+  private readonly githubService = inject(GitHubService);
 
   readonly now = new Date();
   readonly resume = signal<ParsedResume | null>(null);
   readonly statusMessage = signal('Loading public resume profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
+  readonly defaultResumeFileName = 'resume.pdf';
 
   readonly stats = computed(() => {
     const model = this.resume();
@@ -47,10 +49,10 @@ export class ResumeStudioPage implements OnInit {
 
   private async loadProjects(): Promise<void> {
     try {
-      const data = await this.projectsService.getProjects();
-      this.projects.set(data);
+      const repos = await this.githubService.fetchRepos();
+      this.projects.set(this.githubService.mapReposToProjects(repos));
     } catch {
-      // Keep resume profile projects as fallback when DB is unavailable.
+      // Keep resume profile projects as fallback when GitHub is unavailable.
     } finally {
       this.projectsLoading.set(false);
     }
