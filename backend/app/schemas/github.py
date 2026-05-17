@@ -6,6 +6,7 @@ class GitHubRepo(BaseModel):
     name: str
     description: str | None
     html_url: str
+    homepage: str | None
     language: str | None
     stargazers_count: int
     updated_at: str

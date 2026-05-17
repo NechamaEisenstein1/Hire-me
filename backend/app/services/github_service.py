@@ -69,6 +69,7 @@ class GitHubService:
                 name=r["name"],
                 description=r.get("description"),
                 html_url=r["html_url"],
+                homepage=r.get("homepage") or None,
                 language=r.get("language"),
                 stargazers_count=r.get("stargazers_count", 0),
                 updated_at=r.get("updated_at", ""),
