@@ -35,6 +35,8 @@ class ResumeProfile(BaseModel):
     title: str = Field(default="")
     location: str = Field(default="")
     email: str = Field(default="")
+    githubUsername: str | None = Field(default=None)
+    resumeFileName: str | None = Field(default=None)
     summary: str = Field(default="")
     skills: list[str] = Field(default_factory=list)
     experience: list[ResumeExperience] = Field(default_factory=list)

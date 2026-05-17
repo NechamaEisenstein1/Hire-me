@@ -3,7 +3,8 @@ import { RouterLink } from '@angular/router';
 
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { ApiService } from '../../core/services/api.service';
-import { Project, ProjectsService } from '../../core/services/projects.service';
+import { GitHubService } from '../../core/services/github.service';
+import { Project } from '../../core/services/projects.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
 import { ParsedResume } from '../resume-studio/resume-parser';
 
@@ -16,7 +17,7 @@ import { ParsedResume } from '../resume-studio/resume-parser';
 export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
-  private readonly projectsService = inject(ProjectsService);
+  private readonly githubService = inject(GitHubService);
   private readonly shellStore = inject(AppShellStore);
 
   constructor() {
@@ -104,8 +105,18 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
   private async loadProjects(): Promise<void> {
     try {
-      const data = await this.projectsService.getProjects();
-      this.projects.set(data);
+      const repos = await this.githubService.fetchRepos();
+      const projects: Project[] = repos.map((r) => ({
+        id: r.id,
+        slug: r.name,
+        title: r.name,
+        summary: r.description || r.name,
+        repo_url: r.html_url,
+        live_url: r.homepage || null,
+        featured: false,
+        created_at: r.created_at,
+      }));
+      this.projects.set(projects);
     } catch {
       // Fallback: resume profile projects shown in template
     } finally {
