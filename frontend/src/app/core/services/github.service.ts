@@ -7,8 +7,10 @@ export type GitHubRepo = {
   name: string;
   description: string | null;
   html_url: string;
+  homepage: string | null;
   language: string | null;
   stargazers_count: number;
+  created_at: string;
   updated_at: string;
   fork: boolean;
   archived: boolean;

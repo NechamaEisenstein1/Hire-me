@@ -120,7 +120,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
         repo_url: r.html_url,
         live_url: r.homepage || null,
         featured: false,
-        created_at: r.updated_at,
+        created_at: r.created_at,
       }));
       this.projects.set(projects);
     } catch {
