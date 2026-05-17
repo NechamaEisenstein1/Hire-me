@@ -35,6 +35,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   readonly loadingMessage = signal('Loading profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
+  readonly defaultResumeFileName = 'resume.pdf';
 
   async ngOnInit(): Promise<void> {
     await this.loadProfile();
@@ -106,17 +107,7 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   private async loadProjects(): Promise<void> {
     try {
       const repos = await this.githubService.fetchRepos();
-      const projects: Project[] = repos.map((r) => ({
-        id: r.id,
-        slug: r.name,
-        title: r.name,
-        summary: r.description || r.name,
-        repo_url: r.html_url,
-        live_url: r.homepage || null,
-        featured: false,
-        created_at: r.created_at,
-      }));
-      this.projects.set(projects);
+      this.projects.set(this.githubService.mapReposToProjects(repos));
     } catch {
       // Fallback: resume profile projects shown in template
     } finally {

@@ -91,5 +91,11 @@ async def update_resume_profile(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token.")
 
     profile_dict: dict[str, Any] = payload.profile.model_dump()
+    # Preserve fields the client-side parsers never populate (e.g. resumeFileName,
+    # githubUsername) by falling back to the currently stored values.
+    existing = get_resume_profile()
+    for field in ("githubUsername", "resumeFileName"):
+        if profile_dict.get(field) is None and existing.get(field) is not None:
+            profile_dict[field] = existing[field]
     save_resume_profile(profile_dict)
     return ResumeProfile.model_validate(profile_dict)

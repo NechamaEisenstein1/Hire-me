@@ -23,6 +23,7 @@ export class ResumeStudioPage implements OnInit {
   readonly statusMessage = signal('Loading public resume profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
+  readonly defaultResumeFileName = 'resume.pdf';
 
   readonly stats = computed(() => {
     const model = this.resume();
@@ -49,17 +50,7 @@ export class ResumeStudioPage implements OnInit {
   private async loadProjects(): Promise<void> {
     try {
       const repos = await this.githubService.fetchRepos();
-      const projects: Project[] = repos.map((r) => ({
-        id: r.id,
-        slug: r.name,
-        title: r.name,
-        summary: r.description || r.name,
-        repo_url: r.html_url,
-        live_url: r.homepage || null,
-        featured: false,
-        created_at: r.created_at,
-      }));
-      this.projects.set(projects);
+      this.projects.set(this.githubService.mapReposToProjects(repos));
     } catch {
       // Keep resume profile projects as fallback when GitHub is unavailable.
     } finally {

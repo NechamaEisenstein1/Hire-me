@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 
 import { ApiService } from './api.service';
+import { Project } from './projects.service';
 
 export type GitHubRepo = {
   id: number;
@@ -48,5 +49,22 @@ export class GitHubService {
    */
   async fetchRepos(): Promise<GitHubRepo[]> {
     return this.api.get<GitHubRepo[]>('/api/v1/github/repos');
+  }
+
+  /**
+   * Maps GitHub repos to the shared Project shape used across all pages.
+   * Single source of truth for the repo→project transformation.
+   */
+  mapReposToProjects(repos: GitHubRepo[]): Project[] {
+    return repos.map((r) => ({
+      id: r.id,
+      slug: r.name,
+      title: r.name,
+      summary: r.description || r.name,
+      repo_url: r.html_url,
+      live_url: r.homepage || null,
+      featured: false,
+      created_at: r.created_at,
+    }));
   }
 }
