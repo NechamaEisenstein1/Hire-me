@@ -72,6 +72,7 @@ class GitHubService:
                 homepage=r.get("homepage") or None,
                 language=r.get("language"),
                 stargazers_count=r.get("stargazers_count", 0),
+                created_at=r.get("created_at", ""),
                 updated_at=r.get("updated_at", ""),
                 fork=r.get("fork", False),
                 archived=r.get("archived", False),

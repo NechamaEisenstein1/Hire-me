@@ -9,6 +9,7 @@ class GitHubRepo(BaseModel):
     homepage: str | None
     language: str | None
     stargazers_count: int
+    created_at: str
     updated_at: str
     fork: bool
     archived: bool
