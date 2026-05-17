@@ -3,7 +3,8 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { Project, ProjectsService } from '../../core/services/projects.service';
+import { GitHubService } from '../../core/services/github.service';
+import { Project } from '../../core/services/projects.service';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -15,7 +16,7 @@ import { ParsedResume } from './resume-parser';
 export class ResumeStudioPage implements OnInit {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
-  private readonly projectsService = inject(ProjectsService);
+  private readonly githubService = inject(GitHubService);
 
   readonly now = new Date();
   readonly resume = signal<ParsedResume | null>(null);
@@ -36,7 +37,7 @@ export class ResumeStudioPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadPublicResumeProfile();
-    void this.loadProjects();
+    void this.loadProjects(this.resume()?.githubUsername);
   }
 
   trackResumeDownload(): void {
@@ -45,12 +46,26 @@ export class ResumeStudioPage implements OnInit {
     });
   }
 
-  private async loadProjects(): Promise<void> {
+  private async loadProjects(profileUsername?: string): Promise<void> {
     try {
-      const data = await this.projectsService.getProjects();
-      this.projects.set(data);
+      const username = await this.githubService.resolveUsername(profileUsername);
+      if (!username) {
+        return;
+      }
+      const repos = await this.githubService.fetchRepos();
+      const projects: Project[] = repos.map((r) => ({
+        id: r.id,
+        slug: r.name,
+        title: r.name,
+        summary: r.description || r.name,
+        repo_url: r.html_url,
+        live_url: r.homepage || null,
+        featured: false,
+        created_at: r.created_at,
+      }));
+      this.projects.set(projects);
     } catch {
-      // Keep resume profile projects as fallback when DB is unavailable.
+      // Keep resume profile projects as fallback when GitHub is unavailable.
     } finally {
       this.projectsLoading.set(false);
     }
