@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
+import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from '../resume-studio/resume-parser';
 
 @Component({
@@ -35,7 +36,6 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   readonly loadingMessage = signal('Loading profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
-  readonly defaultResumeFileName = 'resume.pdf';
 
   async ngOnInit(): Promise<void> {
     await this.loadProfile();
@@ -75,6 +75,9 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       // Ignore analytics failures for recruiter UX.
     });
   }
+
+  protected readonly getResumeDownloadHref = getResumeDownloadHref;
+  protected readonly getResumeDownloadFileName = getResumeDownloadFileName;
 
   private observeAvailableSections(): void {
     if (!this.sectionObserver) {

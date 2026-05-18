@@ -5,6 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
+import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -23,7 +24,6 @@ export class ResumeStudioPage implements OnInit {
   readonly statusMessage = signal('Loading public resume profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
-  readonly defaultResumeFileName = 'resume.pdf';
 
   readonly stats = computed(() => {
     const model = this.resume();
@@ -46,6 +46,9 @@ export class ResumeStudioPage implements OnInit {
       // Ignore analytics failures for recruiter UX.
     });
   }
+
+  protected readonly getResumeDownloadHref = getResumeDownloadHref;
+  protected readonly getResumeDownloadFileName = getResumeDownloadFileName;
 
   private async loadProjects(): Promise<void> {
     try {
