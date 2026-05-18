@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
+import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from '../resume-studio/resume-parser';
 
 @Component({
@@ -75,14 +76,8 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  getResumeDownloadHref(fileName?: string | null): string | null {
-    const resolved = fileName?.trim();
-    return resolved ? `/${encodeURIComponent(resolved)}` : null;
-  }
-
-  getResumeDownloadFileName(fileName?: string | null): string | null {
-    return fileName?.trim() || null;
-  }
+  protected readonly getResumeDownloadHref = getResumeDownloadHref;
+  protected readonly getResumeDownloadFileName = getResumeDownloadFileName;
 
   private observeAvailableSections(): void {
     if (!this.sectionObserver) {

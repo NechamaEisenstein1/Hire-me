@@ -5,6 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
+import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -46,14 +47,8 @@ export class ResumeStudioPage implements OnInit {
     });
   }
 
-  getResumeDownloadHref(fileName?: string | null): string | null {
-    const resolved = fileName?.trim();
-    return resolved ? `/${encodeURIComponent(resolved)}` : null;
-  }
-
-  getResumeDownloadFileName(fileName?: string | null): string | null {
-    return fileName?.trim() || null;
-  }
+  protected readonly getResumeDownloadHref = getResumeDownloadHref;
+  protected readonly getResumeDownloadFileName = getResumeDownloadFileName;
 
   private async loadProjects(): Promise<void> {
     try {
