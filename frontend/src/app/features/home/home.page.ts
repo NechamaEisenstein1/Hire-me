@@ -35,7 +35,6 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   readonly loadingMessage = signal('Loading profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
-  readonly defaultResumeFileName = 'resume.pdf';
 
   async ngOnInit(): Promise<void> {
     await this.loadProfile();
@@ -74,6 +73,15 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
     this.analytics.trackResumeDownload().catch(() => {
       // Ignore analytics failures for recruiter UX.
     });
+  }
+
+  getResumeDownloadHref(fileName?: string | null): string | null {
+    const resolved = fileName?.trim();
+    return resolved ? `/${encodeURIComponent(resolved)}` : null;
+  }
+
+  getResumeDownloadFileName(fileName?: string | null): string | null {
+    return fileName?.trim() || null;
   }
 
   private observeAvailableSections(): void {

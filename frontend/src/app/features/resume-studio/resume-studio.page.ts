@@ -23,7 +23,6 @@ export class ResumeStudioPage implements OnInit {
   readonly statusMessage = signal('Loading public resume profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
-  readonly defaultResumeFileName = 'resume.pdf';
 
   readonly stats = computed(() => {
     const model = this.resume();
@@ -45,6 +44,15 @@ export class ResumeStudioPage implements OnInit {
     this.analytics.trackResumeDownload().catch(() => {
       // Ignore analytics failures for recruiter UX.
     });
+  }
+
+  getResumeDownloadHref(fileName?: string | null): string | null {
+    const resolved = fileName?.trim();
+    return resolved ? `/${encodeURIComponent(resolved)}` : null;
+  }
+
+  getResumeDownloadFileName(fileName?: string | null): string | null {
+    return fileName?.trim() || null;
   }
 
   private async loadProjects(): Promise<void> {
