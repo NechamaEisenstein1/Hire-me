@@ -1,7 +1,9 @@
 from typing import Callable, cast
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.responses import Response
@@ -53,3 +55,8 @@ app.include_router(projects_router)
 app.include_router(github_router)
 app.include_router(graphql_router, prefix="/graphql")
 app.include_router(visitors_ws_router)
+
+# Mount static files for resumes
+resumes_dir = Path(__file__).resolve().parents[2] / "backend" / "app" / "data" / "resumes"
+resumes_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/public", StaticFiles(directory=str(resumes_dir)), name="resumes")

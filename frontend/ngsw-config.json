@@ -15,7 +15,7 @@
       "installMode": "lazy",
       "updateMode": "prefetch",
       "resources": {
-        "files": ["/**/*.(svg|cur|jpg|jpeg|png|webp|avif|gif|woff|woff2|ttf|otf)", "/public/**"]
+        "files": ["/**/*.(svg|cur|jpg|jpeg|png|webp|avif|gif|woff|woff2|ttf|otf)", "/public/**", "/assets/**/*.mjs"]
       }
     }
   ]

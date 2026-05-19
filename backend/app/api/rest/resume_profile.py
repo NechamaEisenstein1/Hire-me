@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, File, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
@@ -99,3 +100,35 @@ async def update_resume_profile(
             profile_dict[field] = existing[field]
     save_resume_profile(profile_dict)
     return ResumeProfile.model_validate(profile_dict)
+
+
+@router.post("/file")
+async def upload_resume_file(
+    file: UploadFile = File(...),
+    x_resume_owner_token: str | None = Header(default=None, alias="X-Resume-Owner-Token"),
+) -> dict[str, str]:
+    settings = get_settings()
+    if not settings.resume_owner_token:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Resume owner token is not configured.",
+        )
+
+    if x_resume_owner_token != settings.resume_owner_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token.")
+
+    if not file.filename:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No filename provided.")
+
+    # Create resumes directory if it doesn't exist
+    resumes_dir = Path(__file__).resolve().parents[3] / "backend" / "app" / "data" / "resumes"
+    resumes_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the file
+    file_path = resumes_dir / file.filename
+    try:
+        content = await file.read()
+        file_path.write_bytes(content)
+        return {"filename": file.filename, "message": "File uploaded successfully."}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to save file: {str(e)}")

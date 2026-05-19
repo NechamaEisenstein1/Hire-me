@@ -27,6 +27,8 @@ export class OwnerAdminPage {
   readonly isParsing = signal(false);
   readonly statusMessage = signal('Enter owner token to unlock private admin controls.');
   readonly resume = signal<ParsedResume | null>(null);
+  readonly resumeFileName = signal<string | null>(null);
+  readonly resumeFile = signal<File | null>(null);
   readonly todayStats = signal<AdminTodayStats>({ visitors_today: 0, resume_downloads_today: 0 });
 
   readonly canPublish = computed(() => this.ownerUnlocked() && !!this.resume() && !this.isPublishing());
@@ -83,15 +85,27 @@ export class OwnerAdminPage {
 
     const token = this.ownerTokenInput().trim();
     const profile = this.resume();
+    const file = this.resumeFile();
     if (!token || !profile) {
       return;
     }
 
     this.isPublishing.set(true);
     try {
-      await this.api.put<ParsedResume>('/api/v1/resume-profile', { profile }, {
+      const profileToSave = { ...profile, resumeFileName: this.resumeFileName() };
+      await this.api.put<ParsedResume>('/api/v1/resume-profile', { profile: profileToSave }, {
         headers: { 'X-Resume-Owner-Token': token }
       });
+
+      // Upload the actual file separately if available
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        await this.api.post('/api/v1/resume-profile/file', formData, {
+          headers: { 'X-Resume-Owner-Token': token }
+        });
+      }
+
       this.statusMessage.set('Resume published successfully. Public site is updated.');
     } catch (error: unknown) {
       this.statusMessage.set(error instanceof ApiError ? error.message : 'Failed to publish resume.');
@@ -120,6 +134,8 @@ export class OwnerAdminPage {
     try {
       const parsed = await parseResumeFile(file);
       this.resume.set(parsed);
+      this.resumeFileName.set(file.name);
+      this.resumeFile.set(file);
       this.statusMessage.set(`Parsed ${file.name}. Review and publish.`);
     } catch (error: unknown) {
       this.statusMessage.set(error instanceof Error ? error.message : 'Could not parse resume file.');

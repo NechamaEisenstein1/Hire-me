@@ -1,6 +1,6 @@
-# Hire Me — Interactive Portfolio Platform
+# Hire Me
 
-A production-grade fullstack portfolio with an AI interview chatbot, live visitor analytics, 3D resume card, and an interactive Resume Studio — built to be explored by recruiters and hiring managers.
+An interactive portfolio and resume platform designed for recruiters and hiring managers. It presents experience, projects, and resume content through a polished frontend, a lightweight AI Q&A flow, and an admin surface for keeping content current.
 
 ![Angular](https://img.shields.io/badge/Angular-18-DD0031?logo=angular&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116-009688?logo=fastapi&logoColor=white)
@@ -10,16 +10,24 @@ A production-grade fullstack portfolio with an AI interview chatbot, live visito
 
 ---
 
+## What It Shows
+
+- A portfolio that feels like a product, not just a static profile page
+- A fullstack build: Angular frontend, FastAPI backend, database, WebSockets, and AI integration
+- A deployment-ready setup with Docker for local use and Terraform for cloud infrastructure
+
+---
+
 ## Features
 
 | Feature | Description |
 |---|---|
-| 🤖 **AI Interview Chatbot** | Ask me anything about my experience — powered by Gemini |
-| 📄 **Resume Studio** | Interactive CV viewer with skills, timeline, projects, and education |
-| 🎲 **3D Resume Card** | Flippable Three.js card with live resume data and parallax tilt |
-| 📊 **Live Analytics** | Real-time visitor WebSocket feed and owner admin dashboard |
-| 🗂 **Resume Parser** | Upload JSON, TXT, PDF, or DOCX to preview parsed resume data |
-| 🔐 **Owner Admin Panel** | Token-protected panel for managing the live resume profile |
+| 🤖 **AI Interview Chat** | Ask questions about experience, projects, and background through a Gemini-powered chat flow |
+| 📄 **Resume Studio** | Browse resume content with sections for skills, timeline, education, and project highlights |
+| 🎲 **3D Resume Card** | Explore a Three.js resume card with motion and parallax effects |
+| 🗂 **GitHub + Resume Import** | Pull project data from GitHub and upload resume files for parsing and preview |
+| 📊 **Live Analytics** | Track visits in real time through REST metrics, WebSockets, and an owner dashboard |
+| 🔐 **Owner Admin Panel** | Update and publish resume content through a token-protected admin flow |
 
 ---
 
@@ -61,11 +69,14 @@ docker compose up --build
 
 ### Option B — Local dev (no Docker)
 
-**Backend** (from workspace root):
+**Backend**:
 
 ```powershell
-cp .env.example .env   # fill in secrets
-python run_backend.py
+cp .env.example .env
+cd backend
+poetry install
+cd ..
+poetry run python run_backend.py
 # runs on http://127.0.0.1:8001
 ```
 
@@ -105,10 +116,21 @@ RESUME_OWNER_TOKEN=your-private-owner-token
 | `POST` | `/api/v1/chat/messages` | AI interview chat |
 | `GET` | `/api/v1/resume-profile` | Public resume data |
 | `PUT` | `/api/v1/resume-profile` | Update resume (owner only) |
+| `POST` | `/api/v1/resume-profile/verify` | Verify owner token (owner only) |
+| `POST` | `/api/v1/resume-profile/file` | Upload resume file (owner only) |
+| `GET` | `/public/<filename>` | Download stored resume file |
+| `GET` | `/api/v1/github/repos` | Load GitHub repositories for project mapping |
 | `GET` | `/api/v1/analytics/admin/today` | Analytics dashboard (owner only) |
 | `WS` | `/ws/visitors` | Live visitor feed |
 
 Owner-protected endpoints require header: `X-Resume-Owner-Token: <token>`
+
+**Resume Upload Flow**:
+1. Owner uploads resume file (PDF/DOCX) in admin panel
+2. Frontend parses and displays extracted content for review
+3. On publish, frontend sends both profile JSON and original file to backend
+4. Backend stores file in `backend/app/data/resumes/` and saves profile metadata
+5. Public can download via `/public/<filename>` or use default `resume.pdf` fallback
 
 ---
 
