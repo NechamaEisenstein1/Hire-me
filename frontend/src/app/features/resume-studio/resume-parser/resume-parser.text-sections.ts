@@ -93,92 +93,26 @@ export function extractLocation(intro: string[]): string {
   return locationCandidate ?? 'Location';
 }
 
-export function extractSkills(skillLines: string[], allLines: string[]): string[] {
-  const fromSection = skillLines
-    .flatMap((line) => line.split(/[;,|/]/))
-    .map((item) => item.replace(/^[-*]\s*/, '').trim())
-    .filter((item) => item.length > 1 && item.length < 50);
-
-  const known = [
-    'Angular',
-    'Angular Material',
-    'TypeScript',
-    'JavaScript',
-    'HTML',
-    'CSS',
-    'Tailwind CSS',
-    'RxJS',
-    'Python',
-    'FastAPI',
-    'Django',
-    'Flask',
-    'SQLAlchemy',
-    'PostgreSQL',
-    'MySQL',
-    'SQLite',
-    'MongoDB',
-    'Docker',
-    'Kubernetes',
-    'Terraform',
-    'AWS',
-    'GCP',
-    'Azure',
-    'GraphQL',
-    'Node.js',
-    'React',
-    'Redis',
-    'WebSocket',
-    'REST API',
-    'JWT',
-    'CI/CD',
-    'Git',
-    'GitHub',
-    'Pytest',
-    'Three.js',
-    'GSAP',
-  ];
-
-  const blob = allLines.join(' ').toLowerCase();
-  const inferred = known.filter((skill) => matchesSkill(blob, skill));
-
-  const implied: Array<{ pattern: RegExp; skill: string }> = [
-    { pattern: /\bpull requests?\b|\bcode reviews?\b/, skill: 'Code Review' },
-    { pattern: /\bunit tests?\b|\btest automation\b/, skill: 'Automated Testing' },
-    { pattern: /\bmicroservices?\b/, skill: 'Microservices' },
-    { pattern: /\bapi\b.*\bdesign\b|\brestful\b/, skill: 'API Design' },
-    { pattern: /\brealtime\b|\bwebsocket\b/, skill: 'Real-time Systems' },
-    { pattern: /\bdeploy\b|\bdeployment\b|\bcontainer\b/, skill: 'DevOps' },
-    { pattern: /\bauth\b|\bauthorization\b|\bauthentication\b/, skill: 'Authentication' },
-    { pattern: /\banalytics\b|\btracking\b/, skill: 'Analytics' },
-  ];
-
-  const impliedSkills = implied
-    .filter((entry) => entry.pattern.test(blob))
-    .map((entry) => entry.skill);
-
-  return uniquePreserveOrder([...fromSection, ...inferred, ...impliedSkills]).slice(0, 32);
-}
-
-function matchesSkill(blob: string, skill: string): boolean {
-  const normalized = skill.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(`(^|[^a-z0-9+.#-])${normalized}([^a-z0-9+.#-]|$)`, 'i');
-  return pattern.test(blob);
-}
-
-function uniquePreserveOrder(items: string[]): string[] {
+export function extractSkills(skillLines: string[]): string[] {
+  const proficiency = new Set([
+    'native', 'fluent', 'basic', 'intermediate', 'advanced', 'proficient', 'bilingual',
+  ]);
   const seen = new Set<string>();
   const result: string[] = [];
 
-  for (const item of items) {
-    const normalized = item.trim();
-    if (!normalized) {
-      continue;
-    }
-
-    const key = normalized.toLowerCase();
-    if (!seen.has(key)) {
-      seen.add(key);
-      result.push(normalized);
+  for (const line of skillLines) {
+    for (const raw of line.split(/[;,|/]/)) {
+      const stripped = raw.replace(/^[-*]\s*/, '').trim();
+      // Strip "Category: value" prefix — keep only what follows the colon
+      const colon = stripped.indexOf(':');
+      const item = colon >= 0 ? stripped.slice(colon + 1).trim() : stripped;
+      if (item.length > 1 && item.length < 50 && !proficiency.has(item.toLowerCase())) {
+        const key = item.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push(item);
+        }
+      }
     }
   }
 

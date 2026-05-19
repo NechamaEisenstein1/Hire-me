@@ -1,67 +1,44 @@
 import { ResumeEducation, ResumeExperience, ResumeProject } from './resume-parser.types';
 
 export function extractExperience(lines: string[]): ResumeExperience[] {
-  if (lines.length === 0) {
-    return [];
-  }
+  if (lines.length === 0) return [];
 
-  const items: ResumeExperience[] = [];
-  let current: ResumeExperience | null = null;
+  // Each block starts on a line matching "Company – Role | 2020 – 2024"
+  const blocks: string[][] = [];
+  let current: string[] = [];
 
   for (const line of lines) {
-    if (looksLikeExperienceHeader(line)) {
-      if (current) {
-        items.push(current);
-      }
-      current = parseExperienceHeader(line);
-      continue;
-    }
-
-    if (!current) {
-      continue;
-    }
-
-    if (looksLikePeriod(line) && !current.period) {
-      current.period = line;
-      continue;
-    }
-
-    if (line.startsWith('-') || line.startsWith('*')) {
-      current.highlights.push(line.replace(/^[-*]\s*/, ''));
-      continue;
-    }
-
-    if (current.highlights.length < 3 && line.length > 12) {
-      current.highlights.push(line);
+    if (looksLikeEntryHeader(line) && current.length > 0) {
+      blocks.push(current);
+      current = [line];
+    } else {
+      current.push(line);
     }
   }
+  if (current.length > 0) blocks.push(current);
 
-  if (current) {
-    items.push(current);
-  }
+  return blocks
+    .map((block) => {
+      const [header, ...body] = block;
+      const period = extractPeriodFromLine(header);
+      // Strip the period and trailing separator chars to isolate "Company – Role"
+      const headerText = header.replace(period, '').replace(/[\s|]+$/, '').trim();
+      const parts = headerText.split(/\s+[\u2013-]\s+/);
+      return {
+        role: parts[0].trim(),
+        company: parts.slice(1).join(' \u2013 ').trim(),
+        period,
+        highlights: body
+          .map((l) => l.replace(/^[-*]\s*/, '').trim())
+          .filter((l) => l.length > 0),
+      };
+    })
+    .filter((e) => e.role.length > 0)
+    .slice(0, 10);
+}
 
-  if (items.length === 0) {
-    const narrativeLines = lines
-      .map((line) => line.replace(/^[-*]\s*/, '').trim())
-      .filter((line) => line.length > 4);
-
-    if (narrativeLines.length > 0) {
-      const firstLine = narrativeLines[0];
-      const parsedHeader = parseExperienceHeader(firstLine);
-      const firstLineIsHeader = looksLikeExperienceHeader(firstLine);
-      const periodFromBody =
-        narrativeLines.find((line) => looksLikePeriod(line)) ?? extractPeriodFromLine(firstLine);
-
-      items.push({
-        role: firstLineIsHeader ? parsedHeader.role : 'Professional Experience',
-        company: firstLineIsHeader ? parsedHeader.company : '',
-        period: parsedHeader.period || periodFromBody || '',
-        highlights: (firstLineIsHeader ? narrativeLines.slice(1) : narrativeLines).slice(0, 8),
-      });
-    }
-  }
-
-  return items.slice(0, 10);
+function looksLikeEntryHeader(line: string): boolean {
+  return /\b(19|20)\d{2}\b/.test(line) && (line.includes(' \u2013 ') || line.includes(' | '));
 }
 
 export function extractProjects(lines: string[]): ResumeProject[] {
@@ -163,12 +140,6 @@ function looksLikeExperienceHeader(line: string): boolean {
   return (
     /\b(lead|senior|junior|engineer|developer|manager|architect|analyst|consultant)\b/i.test(line) &&
     (line.includes(' at ') || line.includes(' - ') || line.length < 90)
-  );
-}
-
-function looksLikePeriod(line: string): boolean {
-  return /(19|20)\d{2}|present|current|עד היום|\bjan\b|\bfeb\b|\bmar\b|\bapr\b|\bmay\b|\bjun\b|\bjul\b|\baug\b|\bsep\b|\boct\b|\bnov\b|\bdec\b/i.test(
-    line,
   );
 }
 
