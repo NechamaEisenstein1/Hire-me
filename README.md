@@ -116,11 +116,21 @@ RESUME_OWNER_TOKEN=your-private-owner-token
 | `POST` | `/api/v1/chat/messages` | AI interview chat |
 | `GET` | `/api/v1/resume-profile` | Public resume data |
 | `PUT` | `/api/v1/resume-profile` | Update resume (owner only) |
+| `POST` | `/api/v1/resume-profile/verify` | Verify owner token (owner only) |
+| `POST` | `/api/v1/resume-profile/file` | Upload resume file (owner only) |
+| `GET` | `/public/<filename>` | Download stored resume file |
 | `GET` | `/api/v1/github/repos` | Load GitHub repositories for project mapping |
 | `GET` | `/api/v1/analytics/admin/today` | Analytics dashboard (owner only) |
 | `WS` | `/ws/visitors` | Live visitor feed |
 
 Owner-protected endpoints require header: `X-Resume-Owner-Token: <token>`
+
+**Resume Upload Flow**:
+1. Owner uploads resume file (PDF/DOCX) in admin panel
+2. Frontend parses and displays extracted content for review
+3. On publish, frontend sends both profile JSON and original file to backend
+4. Backend stores file in `backend/app/data/resumes/` and saves profile metadata
+5. Public can download via `/public/<filename>` or use default `resume.pdf` fallback
 
 ---
 
