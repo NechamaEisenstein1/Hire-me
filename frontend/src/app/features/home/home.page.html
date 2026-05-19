@@ -17,7 +17,7 @@
     </p>
     <div class="hero-actions">
       @if (model.resumeFileName) {
-        <a [href]="getResumeDownloadHref(model.resumeFileName)" [attr.download]="getResumeDownloadFileName(model.resumeFileName)" (click)="trackResumeDownload()" class="action-primary">Download Resume</a>
+        <a [href]="getResumeDownloadHref(model.resumeFileName)" [attr.download]="getResumeDownloadFileName(model.resumeFileName)" (click)="trackResumeDownload($event, model.resumeFileName)" class="action-primary">Download Resume</a>
       }
       <a routerLink="/interview-me" class="action-secondary">Interview Me →</a>
     </div>
@@ -125,7 +125,7 @@
       </p>
       <div class="hero-actions">
         @if (model.resumeFileName) {
-          <a [href]="getResumeDownloadHref(model.resumeFileName)" [attr.download]="getResumeDownloadFileName(model.resumeFileName)" (click)="trackResumeDownload()" class="action-primary">Download PDF</a>
+          <a [href]="getResumeDownloadHref(model.resumeFileName)" [attr.download]="getResumeDownloadFileName(model.resumeFileName)" (click)="trackResumeDownload($event, model.resumeFileName)" class="action-primary">Download PDF</a>
         }
         <a routerLink="/resume-studio" class="action-secondary">Resume Studio</a>
         <a routerLink="/resume-3d" class="action-emerald">3D Resume ↗</a>

@@ -31,7 +31,7 @@ export function parseTextResume(content: string): ParsedResume {
     location: extractLocation(intro),
     email,
     summary: summaryLines.join(' ').slice(0, 560) || 'Add a short professional summary.',
-    skills: extractSkills(sections.skills, lines),
+    skills: extractSkills(sections.skills),
     experience: extractExperience(sections.experience),
     projects: extractProjects(sections.projects),
     education: extractEducation(sections.education),

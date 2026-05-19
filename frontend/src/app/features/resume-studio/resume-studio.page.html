@@ -14,7 +14,7 @@
             <a
               [href]="getResumeDownloadHref(resume()?.resumeFileName)"
               [attr.download]="getResumeDownloadFileName(resume()?.resumeFileName)"
-              (click)="trackResumeDownload()"
+              (click)="trackResumeDownload($event, resume()?.resumeFileName)"
               class="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-brand-900 no-underline ring-1 ring-brand-300 hover:bg-brand-50 dark:bg-brand-950 dark:text-brand-100 dark:ring-brand-700"
             >
               Download My Resume

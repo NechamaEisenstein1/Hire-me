@@ -5,7 +5,7 @@ import { ApiService } from '../../core/services/api.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
-import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
+import { downloadResumeFile, getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from './resume-parser';
 
 @Component({
@@ -41,9 +41,13 @@ export class ResumeStudioPage implements OnInit {
     void this.loadProjects();
   }
 
-  trackResumeDownload(): void {
+  trackResumeDownload(event: MouseEvent, fileName?: string | null): void {
+    event.preventDefault();
     this.analytics.trackResumeDownload().catch(() => {
       // Ignore analytics failures for recruiter UX.
+    });
+    downloadResumeFile(fileName).catch(() => {
+      window.location.assign(getResumeDownloadHref(fileName));
     });
   }
 

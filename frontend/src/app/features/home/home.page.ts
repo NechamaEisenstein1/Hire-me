@@ -6,7 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { GitHubService } from '../../core/services/github.service';
 import { Project } from '../../core/services/projects.service';
 import { AppShellStore } from '../../core/stores/app-shell.store';
-import { getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
+import { downloadResumeFile, getResumeDownloadFileName, getResumeDownloadHref } from '../../core/utils/resume-download';
 import { ParsedResume } from '../resume-studio/resume-parser';
 
 @Component({
@@ -70,9 +70,14 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       .toUpperCase();
   }
 
-  trackResumeDownload(): void {
+  trackResumeDownload(event: MouseEvent, fileName?: string | null): void {
+    event.preventDefault();
     this.analytics.trackResumeDownload().catch(() => {
       // Ignore analytics failures for recruiter UX.
+    });
+    downloadResumeFile(fileName).catch(() => {
+      // Fallback: same-tab navigation avoids popup-blocker (triggered after async, not user gesture).
+      window.location.assign(getResumeDownloadHref(fileName));
     });
   }
 
