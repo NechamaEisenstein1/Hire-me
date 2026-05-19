@@ -1,5 +1,7 @@
 import JSZip from 'jszip';
 
+let pdfWorkerUrlPromise: Promise<string> | null = null;
+
 export async function extractTextFromPdf(file: File): Promise<string> {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   pdfjs.GlobalWorkerOptions.workerSrc = await resolvePdfWorkerUrl();
@@ -46,9 +48,18 @@ export async function extractTextFromPdf(file: File): Promise<string> {
 }
 
 async function resolvePdfWorkerUrl(): Promise<string> {
+  if (pdfWorkerUrlPromise) {
+    return pdfWorkerUrlPromise;
+  }
+
+  pdfWorkerUrlPromise = findPdfWorkerUrl();
+  return pdfWorkerUrlPromise;
+}
+
+async function findPdfWorkerUrl(): Promise<string> {
   const candidates = [
-    new URL('assets/pdf.worker.min.mjs', document.baseURI).toString(),
     new URL('public/pdf.worker.min.mjs', document.baseURI).toString(),
+    new URL('assets/pdf.worker.min.mjs', document.baseURI).toString(),
   ];
 
   for (const candidate of candidates) {
@@ -62,7 +73,11 @@ async function resolvePdfWorkerUrl(): Promise<string> {
 
 async function isJavaScriptWorker(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, { method: 'GET', cache: 'no-cache' });
+    let response = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+    if (response.status === 405 || response.status === 501) {
+      response = await fetch(url, { method: 'GET', cache: 'no-cache' });
+    }
+
     if (!response.ok) {
       return false;
     }
