@@ -15,6 +15,10 @@ type ErrorPayload = {
   detail?: string;
 };
 
+function isFormDataBody(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
 function hasResponseBody(response: Response): boolean {
   if (response.status === 204 || response.status === 205) {
     return false;
@@ -78,16 +82,17 @@ export class ApiService {
   }
 
   async post<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
-    const mergedHeaders = {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {})
-    };
+    const headers = new Headers(init?.headers ?? {});
+    const usesFormData = isFormDataBody(body);
+    if (!usesFormData && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
 
     const response = await this.request(`${this.baseUrl}${path}`, {
       ...init,
       method: 'POST',
-      headers: mergedHeaders,
-      body: JSON.stringify(body)
+      headers,
+      body: usesFormData ? body : JSON.stringify(body)
     });
     if (!response.ok) {
       throw await toApiError(response);
@@ -96,16 +101,17 @@ export class ApiService {
   }
 
   async put<T>(path: string, body: unknown, init?: RequestInit): Promise<T> {
-    const mergedHeaders = {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {})
-    };
+    const headers = new Headers(init?.headers ?? {});
+    const usesFormData = isFormDataBody(body);
+    if (!usesFormData && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
 
     const response = await this.request(`${this.baseUrl}${path}`, {
       ...init,
       method: 'PUT',
-      headers: mergedHeaders,
-      body: JSON.stringify(body)
+      headers,
+      body: usesFormData ? body : JSON.stringify(body)
     });
     if (!response.ok) {
       throw await toApiError(response);

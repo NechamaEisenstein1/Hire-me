@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiError, ApiService } from '../../core/services/api.service';
 import { AdminTodayStats, AnalyticsService } from '../../core/services/analytics.service';
 import { ParsedResume, parseResumeFile } from '../resume-studio/resume-parser';
+import { environment } from '../../../environments/environment';
 
 type VerifyResponse = { valid: boolean };
 
@@ -92,15 +93,32 @@ export class OwnerAdminPage {
 
     this.isPublishing.set(true);
     try {
-      const profileToSave = { ...profile, resumeFileName: this.resumeFileName() };
-      await this.api.put<ParsedResume>('/api/v1/resume-profile', { profile: profileToSave }, {
+      const profileToSave = normalizePublishProfile(profile, this.resumeFileName());
+      const publishPayload = { profile: profileToSave };
+
+      if (!environment.production) {
+        console.info('Resume publish payload', {
+          endpoint: '/api/v1/resume-profile',
+          payload: publishPayload,
+        });
+      }
+
+      await this.api.put<ParsedResume>('/api/v1/resume-profile', publishPayload, {
         headers: { 'X-Resume-Owner-Token': token }
       });
 
       // Upload the actual file separately if available
       if (file) {
+        if (!environment.production) {
+          console.info('Resume file upload payload', {
+            endpoint: '/api/v1/resume-profile/file',
+            fileName: file.name,
+            size: file.size,
+            type: file.type,
+          });
+        }
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', file, file.name);
         await this.api.post('/api/v1/resume-profile/file', formData, {
           headers: { 'X-Resume-Owner-Token': token }
         });
@@ -108,6 +126,9 @@ export class OwnerAdminPage {
 
       this.statusMessage.set('Resume published successfully. Public site is updated.');
     } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 422) {
+        console.error('Publish request failed with 422. Check logged payload structure and field values.');
+      }
       this.statusMessage.set(error instanceof ApiError ? error.message : 'Failed to publish resume.');
     } finally {
       this.isPublishing.set(false);
@@ -143,4 +164,49 @@ export class OwnerAdminPage {
       this.isParsing.set(false);
     }
   }
+}
+
+function normalizePublishProfile(profile: ParsedResume, resumeFileName: string | null): ParsedResume {
+  return {
+    ...profile,
+    resumeFileName: resumeFileName ?? profile.resumeFileName,
+    summary: profile.summary.trim(),
+    skills: dedupeStrings(profile.skills),
+    experience: profile.experience.map((item) => ({
+      role: item.role.trim(),
+      company: item.company.trim(),
+      period: item.period.trim(),
+      highlights: dedupeStrings(item.highlights),
+    })),
+    projects: profile.projects.map((item) => ({
+      name: item.name.trim(),
+      summary: item.summary.trim(),
+      stack: dedupeStrings(item.stack),
+    })),
+    education: profile.education.map((item) => ({
+      degree: item.degree.trim(),
+      school: item.school.trim(),
+      period: item.period.trim(),
+    })),
+  };
+}
+
+function dedupeStrings(items: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of items) {
+    const trimmed = item.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const key = trimmed.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      result.push(trimmed);
+    }
+  }
+
+  return result;
 }
