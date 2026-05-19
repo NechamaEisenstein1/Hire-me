@@ -1,15 +1,25 @@
 from __future__ import annotations
 
+import mimetypes
+import logging
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
+from starlette.responses import Response
 
 from app.core.config import get_settings
 from app.services.resume_profile_service import get_resume_profile, save_resume_profile
 
 router = APIRouter(prefix="/api/v1/resume-profile", tags=["resume-profile"])
+logger = logging.getLogger(__name__)
+
+
+def _get_resumes_dir() -> Path:
+    resumes_dir = Path(__file__).resolve().parents[3] / "backend" / "app" / "data" / "resumes"
+    resumes_dir.mkdir(parents=True, exist_ok=True)
+    return resumes_dir
 
 
 class ResumeExperience(BaseModel):
@@ -39,8 +49,20 @@ class ResumeProfile(BaseModel):
     githubUsername: str | None = Field(default=None)
     resumeFileName: str | None = Field(default=None)
     summary: str = Field(default="")
-    skills: list[str] = Field(default_factory=list)
-    experience: list[ResumeExperience] = Field(default_factory=list)
+    skills: list[str] = Field(
+        ...,
+        description=(
+            "Required. Include explicitly listed technical skills and implied technical skills "
+            "evidenced in project/experience text (frameworks, cloud, API, testing, tooling)."
+        ),
+    )
+    experience: list[ResumeExperience] = Field(
+        ...,
+        description=(
+            "Required. Include professional experience entries and preserve narrative paragraph "
+            "content as highlights when structured bullets are unavailable."
+        ),
+    )
     projects: list[ResumeProject] = Field(default_factory=list)
     education: list[ResumeEducation] = Field(default_factory=list)
 
@@ -91,6 +113,13 @@ async def update_resume_profile(
     if x_resume_owner_token != settings.resume_owner_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token.")
 
+    logger.info(
+        "resume_profile_publish_payload",
+        extra={
+            "payload": payload.model_dump(mode="json"),
+        },
+    )
+
     profile_dict: dict[str, Any] = payload.profile.model_dump()
     # Preserve fields the client-side parsers never populate (e.g. resumeFileName,
     # githubUsername) by falling back to the currently stored values.
@@ -120,9 +149,15 @@ async def upload_resume_file(
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No filename provided.")
 
-    # Create resumes directory if it doesn't exist
-    resumes_dir = Path(__file__).resolve().parents[3] / "backend" / "app" / "data" / "resumes"
-    resumes_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(
+        "resume_profile_file_upload",
+        extra={
+            "filename": file.filename,
+            "content_type": file.content_type,
+        },
+    )
+
+    resumes_dir = _get_resumes_dir()
 
     # Save the file
     file_path = resumes_dir / file.filename
@@ -132,3 +167,30 @@ async def upload_resume_file(
         return {"filename": file.filename, "message": "File uploaded successfully."}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to save file: {str(e)}")
+
+
+@router.get("/file/{file_name}")
+async def download_resume_file(file_name: str) -> Response:
+    if not file_name or file_name in {".", ".."} or "/" in file_name or "\\" in file_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename.")
+
+    resumes_dir = _get_resumes_dir()
+    file_path = resumes_dir / file_name
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume file not found.")
+
+    content = file_path.read_bytes()
+    media_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+    logger.info(
+        "resume_profile_file_download",
+        extra={
+            "filename": file_name,
+            "media_type": media_type,
+            "bytes": len(content),
+        },
+    )
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
+    )

@@ -40,6 +40,27 @@ export function extractExperience(lines: string[]): ResumeExperience[] {
     items.push(current);
   }
 
+  if (items.length === 0) {
+    const narrativeLines = lines
+      .map((line) => line.replace(/^[-*]\s*/, '').trim())
+      .filter((line) => line.length > 4);
+
+    if (narrativeLines.length > 0) {
+      const firstLine = narrativeLines[0];
+      const parsedHeader = parseExperienceHeader(firstLine);
+      const firstLineIsHeader = looksLikeExperienceHeader(firstLine);
+      const periodFromBody =
+        narrativeLines.find((line) => looksLikePeriod(line)) ?? extractPeriodFromLine(firstLine);
+
+      items.push({
+        role: firstLineIsHeader ? parsedHeader.role : 'Professional Experience',
+        company: firstLineIsHeader ? parsedHeader.company : '',
+        period: parsedHeader.period || periodFromBody || '',
+        highlights: (firstLineIsHeader ? narrativeLines.slice(1) : narrativeLines).slice(0, 8),
+      });
+    }
+  }
+
   return items.slice(0, 10);
 }
 
@@ -109,12 +130,13 @@ export function inferEducationFromGeneralLines(lines: string[]): ResumeEducation
 
 function parseExperienceHeader(line: string): ResumeExperience {
   const clean = line.replace(/^[-*]\s*/, '');
+  const period = extractPeriodFromLine(clean);
   const atParts = clean.split(/\sat\s/i);
   if (atParts.length === 2) {
     return {
       role: atParts[0].trim(),
       company: atParts[1].trim(),
-      period: '',
+      period,
       highlights: [],
     };
   }
@@ -124,7 +146,7 @@ function parseExperienceHeader(line: string): ResumeExperience {
     return {
       role: dashParts[0].trim(),
       company: dashParts[1].trim(),
-      period: '',
+      period,
       highlights: [],
     };
   }
@@ -132,7 +154,7 @@ function parseExperienceHeader(line: string): ResumeExperience {
   return {
     role: clean,
     company: 'Company',
-    period: '',
+    period,
     highlights: [],
   };
 }
@@ -151,7 +173,9 @@ function looksLikePeriod(line: string): boolean {
 }
 
 function extractPeriodFromLine(line: string): string {
-  const match = line.match(/((19|20)\d{2}\s*[-–]\s*((19|20)\d{2}|present|current))/i);
+  const match = line.match(
+    /((19|20)\d{2}\s*[-–]\s*((19|20)\d{2}|present|current|ongoing)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(19|20)\d{2}\s*[-–]\s*(?:present|current|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*(19|20)\d{2}))/i,
+  );
   return match?.[1] ?? '';
 }
 

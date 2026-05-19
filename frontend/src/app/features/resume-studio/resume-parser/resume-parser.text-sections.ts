@@ -25,11 +25,20 @@ export function splitIntoSections(lines: string[]): ResumeSections {
     profile: 'summary',
     'about me': 'summary',
     'work experience': 'experience',
+    'professional experience': 'experience',
+    'relevant experience': 'experience',
+    'career experience': 'experience',
     experience: 'experience',
     employment: 'experience',
+    'employment history': 'experience',
     skills: 'skills',
+    'technical skills': 'skills',
+    'core skills': 'skills',
+    competencies: 'skills',
+    toolkit: 'skills',
     technologies: 'skills',
     projects: 'projects',
+    'selected projects': 'projects',
     education: 'education',
     'academic background': 'education',
     'professional summary': 'summary',
@@ -86,23 +95,31 @@ export function extractLocation(intro: string[]): string {
 
 export function extractSkills(skillLines: string[], allLines: string[]): string[] {
   const fromSection = skillLines
-    .join(',')
-    .split(/[;,|/]/)
+    .flatMap((line) => line.split(/[;,|/]/))
     .map((item) => item.replace(/^[-*]\s*/, '').trim())
-    .filter((item) => item.length > 1 && item.length < 40);
+    .filter((item) => item.length > 1 && item.length < 50);
 
   const known = [
     'Angular',
+    'Angular Material',
     'TypeScript',
     'JavaScript',
+    'HTML',
+    'CSS',
+    'Tailwind CSS',
+    'RxJS',
     'Python',
     'FastAPI',
     'Django',
+    'Flask',
+    'SQLAlchemy',
     'PostgreSQL',
     'MySQL',
+    'SQLite',
     'MongoDB',
     'Docker',
     'Kubernetes',
+    'Terraform',
     'AWS',
     'GCP',
     'Azure',
@@ -110,11 +127,42 @@ export function extractSkills(skillLines: string[], allLines: string[]): string[
     'Node.js',
     'React',
     'Redis',
+    'WebSocket',
+    'REST API',
+    'JWT',
+    'CI/CD',
+    'Git',
+    'GitHub',
+    'Pytest',
+    'Three.js',
+    'GSAP',
   ];
 
   const blob = allLines.join(' ').toLowerCase();
-  const inferred = known.filter((skill) => blob.includes(skill.toLowerCase()));
-  return uniquePreserveOrder([...fromSection, ...inferred]).slice(0, 24);
+  const inferred = known.filter((skill) => matchesSkill(blob, skill));
+
+  const implied: Array<{ pattern: RegExp; skill: string }> = [
+    { pattern: /\bpull requests?\b|\bcode reviews?\b/, skill: 'Code Review' },
+    { pattern: /\bunit tests?\b|\btest automation\b/, skill: 'Automated Testing' },
+    { pattern: /\bmicroservices?\b/, skill: 'Microservices' },
+    { pattern: /\bapi\b.*\bdesign\b|\brestful\b/, skill: 'API Design' },
+    { pattern: /\brealtime\b|\bwebsocket\b/, skill: 'Real-time Systems' },
+    { pattern: /\bdeploy\b|\bdeployment\b|\bcontainer\b/, skill: 'DevOps' },
+    { pattern: /\bauth\b|\bauthorization\b|\bauthentication\b/, skill: 'Authentication' },
+    { pattern: /\banalytics\b|\btracking\b/, skill: 'Analytics' },
+  ];
+
+  const impliedSkills = implied
+    .filter((entry) => entry.pattern.test(blob))
+    .map((entry) => entry.skill);
+
+  return uniquePreserveOrder([...fromSection, ...inferred, ...impliedSkills]).slice(0, 32);
+}
+
+function matchesSkill(blob: string, skill: string): boolean {
+  const normalized = skill.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(^|[^a-z0-9+.#-])${normalized}([^a-z0-9+.#-]|$)`, 'i');
+  return pattern.test(blob);
 }
 
 function uniquePreserveOrder(items: string[]): string[] {

@@ -1,5 +1,8 @@
 import { JsonInput, ParsedResume } from './resume-parser.types';
 
+const REQUIRED_RESUME_SCHEMA_HINT =
+  "Required JSON fields: 'skills' and 'experience'. Include explicitly listed skills plus implied technical skills evidenced in project/experience text (e.g., APIs, CI/CD, testing, cloud, containers). Include at least one professional experience entry with role/company/period or descriptive highlights.";
+
 export function parseJsonResume(content: string): ParsedResume {
   let parsed: JsonInput;
   try {
@@ -7,6 +10,8 @@ export function parseJsonResume(content: string): ParsedResume {
   } catch {
     throw new Error('Invalid JSON: the file could not be parsed. Please ensure it is valid JSON matching the expected resume structure.');
   }
+
+  validateRequiredResumeFields(parsed);
 
   const experience = (parsed.experience ?? []).map((item) => ({
     role: item.role ?? 'Role',
@@ -43,6 +48,14 @@ export function parseJsonResume(content: string): ParsedResume {
     projects,
     education,
   };
+}
+
+function validateRequiredResumeFields(parsed: JsonInput): void {
+  const hasSkills = Array.isArray(parsed.skills);
+  const hasExperience = Array.isArray(parsed.experience);
+  if (!hasSkills || !hasExperience) {
+    throw new Error(`Invalid resume JSON schema. ${REQUIRED_RESUME_SCHEMA_HINT}`);
+  }
 }
 
 function formatPeriod(start?: string, end?: string): string {
