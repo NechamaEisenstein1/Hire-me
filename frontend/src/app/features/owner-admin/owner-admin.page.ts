@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiError, ApiService } from '../../core/services/api.service';
 import { AdminTodayStats, AnalyticsService } from '../../core/services/analytics.service';
 import { ParsedResume, parseResumeFile } from '../resume-studio/resume-parser';
+import { environment } from '../../../environments/environment';
 
 type VerifyResponse = { valid: boolean };
 
@@ -95,10 +96,12 @@ export class OwnerAdminPage {
       const profileToSave = normalizePublishProfile(profile, this.resumeFileName());
       const publishPayload = { profile: profileToSave };
 
-      console.info('Resume publish payload', {
-        endpoint: '/api/v1/resume-profile',
-        payload: publishPayload,
-      });
+      if (!environment.production) {
+        console.info('Resume publish payload', {
+          endpoint: '/api/v1/resume-profile',
+          payload: publishPayload,
+        });
+      }
 
       await this.api.put<ParsedResume>('/api/v1/resume-profile', publishPayload, {
         headers: { 'X-Resume-Owner-Token': token }
@@ -106,12 +109,14 @@ export class OwnerAdminPage {
 
       // Upload the actual file separately if available
       if (file) {
-        console.info('Resume file upload payload', {
-          endpoint: '/api/v1/resume-profile/file',
-          fileName: file.name,
-          size: file.size,
-          type: file.type,
-        });
+        if (!environment.production) {
+          console.info('Resume file upload payload', {
+            endpoint: '/api/v1/resume-profile/file',
+            fileName: file.name,
+            size: file.size,
+            type: file.type,
+          });
+        }
         const formData = new FormData();
         formData.append('file', file, file.name);
         await this.api.post('/api/v1/resume-profile/file', formData, {

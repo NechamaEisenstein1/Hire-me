@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def _get_resumes_dir() -> Path:
-    resumes_dir = Path(__file__).resolve().parents[3] / "backend" / "app" / "data" / "resumes"
+    # parents[2] == backend/app/, so this resolves to backend/app/data/resumes
+    resumes_dir = Path(__file__).resolve().parents[2] / "data" / "resumes"
     resumes_dir.mkdir(parents=True, exist_ok=True)
     return resumes_dir
 
@@ -42,6 +43,8 @@ class ResumeEducation(BaseModel):
 
 
 class ResumeProfile(BaseModel):
+    """Tolerant response/storage model — all fields default so historical data always deserializes."""
+
     name: str = Field(default="")
     title: str = Field(default="")
     location: str = Field(default="")
@@ -49,6 +52,15 @@ class ResumeProfile(BaseModel):
     githubUsername: str | None = Field(default=None)
     resumeFileName: str | None = Field(default=None)
     summary: str = Field(default="")
+    skills: list[str] = Field(default_factory=list)
+    experience: list[ResumeExperience] = Field(default_factory=list)
+    projects: list[ResumeProject] = Field(default_factory=list)
+    education: list[ResumeEducation] = Field(default_factory=list)
+
+
+class ResumeProfileInput(ResumeProfile):
+    """Strict write model — skills and experience are required on every publish."""
+
     skills: list[str] = Field(
         ...,
         description=(
@@ -63,12 +75,10 @@ class ResumeProfile(BaseModel):
             "content as highlights when structured bullets are unavailable."
         ),
     )
-    projects: list[ResumeProject] = Field(default_factory=list)
-    education: list[ResumeEducation] = Field(default_factory=list)
 
 
 class UpdateResumeProfileRequest(BaseModel):
-    profile: ResumeProfile
+    profile: ResumeProfileInput
 
 
 class VerifyOwnerResponse(BaseModel):
@@ -113,14 +123,17 @@ async def update_resume_profile(
     if x_resume_owner_token != settings.resume_owner_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid owner token.")
 
+    profile = payload.profile
     logger.info(
-        "resume_profile_publish_payload",
+        "resume_profile_publish",
         extra={
-            "payload": payload.model_dump(mode="json"),
+            "skill_count": len(profile.skills),
+            "experience_count": len(profile.experience),
+            "has_resume_file": bool(profile.resumeFileName),
         },
     )
 
-    profile_dict: dict[str, Any] = payload.profile.model_dump()
+    profile_dict: dict[str, Any] = profile.model_dump()
     # Preserve fields the client-side parsers never populate (e.g. resumeFileName,
     # githubUsername) by falling back to the currently stored values.
     existing = get_resume_profile()

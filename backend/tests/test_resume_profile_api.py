@@ -135,6 +135,29 @@ async def test_update_resume_profile_requires_skills_and_experience(async_client
 
 
 @pytest.mark.anyio
+async def test_read_resume_profile_tolerates_missing_skills_and_experience(
+    async_client: httpx.AsyncClient,
+) -> None:
+    # Historic stored profiles that pre-date required-field enforcement must still
+    # deserialize without error (GET must not 500 on old data).
+    legacy_profile = {
+        "name": "Legacy User",
+        "title": "Engineer",
+        "location": "Israel",
+        "email": "l@example.com",
+        "summary": "Old profile",
+    }
+
+    with patch("app.api.rest.resume_profile.get_resume_profile", return_value=legacy_profile):
+        response = await async_client.get("/api/v1/resume-profile")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["skills"] == []
+    assert data["experience"] == []
+
+
+@pytest.mark.anyio
 async def test_upload_resume_file_saves_file(async_client: httpx.AsyncClient, tmp_path: Path) -> None:
     file_bytes = b"%PDF-1.4 test pdf bytes"
 
