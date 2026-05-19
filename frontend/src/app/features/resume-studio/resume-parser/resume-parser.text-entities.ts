@@ -17,13 +17,16 @@ export function extractExperience(lines: string[]): ResumeExperience[] {
   }
   if (current.length > 0) blocks.push(current);
 
-  return blocks
+  // Discard leading non-header lines — only keep blocks whose first line is a real header.
+  const headerBlocks = blocks.filter((block) => looksLikeEntryHeader(block[0]));
+
+  return headerBlocks
     .map((block) => {
       const [header, ...body] = block;
       const period = extractPeriodFromLine(header);
-      // Strip the period and trailing separator chars to isolate "Company – Role"
+      // Strip the period and trailing separator chars to isolate "Company – Role" or "Role – Company"
       const headerText = header.replace(period, '').replace(/[\s|]+$/, '').trim();
-      const parts = headerText.split(/\s+[\u2013-]\s+/);
+      const parts = headerText.split(/\s+[\u2013\-]\s+/);
       return {
         role: parts[0].trim(),
         company: parts.slice(1).join(' \u2013 ').trim(),
@@ -38,7 +41,9 @@ export function extractExperience(lines: string[]): ResumeExperience[] {
 }
 
 function looksLikeEntryHeader(line: string): boolean {
-  return /\b(19|20)\d{2}\b/.test(line) && (line.includes(' \u2013 ') || line.includes(' | '));
+  const hasDate = /\b(19|20)\d{2}\b/.test(line);
+  const hasSeparator = line.includes(' \u2013 ') || line.includes(' | ') || line.includes(' - ');
+  return hasDate && hasSeparator;
 }
 
 export function extractProjects(lines: string[]): ResumeProject[] {

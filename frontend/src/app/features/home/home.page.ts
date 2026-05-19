@@ -76,8 +76,8 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       // Ignore analytics failures for recruiter UX.
     });
     downloadResumeFile(fileName).catch(() => {
-      // Fall back to direct navigation if the blob download fails.
-      window.open(getResumeDownloadHref(fileName), '_blank');
+      // Fallback: same-tab navigation avoids popup-blocker (triggered after async, not user gesture).
+      window.location.assign(getResumeDownloadHref(fileName));
     });
   }
 

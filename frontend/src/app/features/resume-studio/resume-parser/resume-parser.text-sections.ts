@@ -103,9 +103,15 @@ export function extractSkills(skillLines: string[]): string[] {
   for (const line of skillLines) {
     for (const raw of line.split(/[;,|/]/)) {
       const stripped = raw.replace(/^[-*]\s*/, '').trim();
-      // Strip "Category: value" prefix — keep only what follows the colon
+      // "Category: Skill" → keep suffix. "English: native" → suffix is proficiency, keep prefix instead.
       const colon = stripped.indexOf(':');
-      const item = colon >= 0 ? stripped.slice(colon + 1).trim() : stripped;
+      let item: string;
+      if (colon >= 0) {
+        const suffix = stripped.slice(colon + 1).trim();
+        item = proficiency.has(suffix.toLowerCase()) ? stripped.slice(0, colon).trim() : suffix;
+      } else {
+        item = stripped;
+      }
       if (item.length > 1 && item.length < 50 && !proficiency.has(item.toLowerCase())) {
         const key = item.toLowerCase();
         if (!seen.has(key)) {

@@ -47,7 +47,7 @@ export class ResumeStudioPage implements OnInit {
       // Ignore analytics failures for recruiter UX.
     });
     downloadResumeFile(fileName).catch(() => {
-      window.open(getResumeDownloadHref(fileName), '_blank');
+      window.location.assign(getResumeDownloadHref(fileName));
     });
   }
 
