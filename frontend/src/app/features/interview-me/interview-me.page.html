@@ -7,7 +7,8 @@
       </div>
       @if (messages().length > 0) {
         <button type="button" (click)="clearConversation()"
-          class="shrink-0 rounded-lg border border-brand-200 px-3 py-1.5 text-xs text-brand-500 transition-colors hover:border-brand-400 hover:text-brand-700 dark:border-brand-700 dark:text-brand-400 dark:hover:border-brand-500 dark:hover:text-brand-200">
+          [disabled]="isLoading()"
+          class="shrink-0 rounded-lg border border-brand-200 px-3 py-1.5 text-xs text-brand-500 transition-colors hover:border-brand-400 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 dark:border-brand-700 dark:text-brand-400 dark:hover:border-brand-500 dark:hover:text-brand-200">
           New conversation
         </button>
       }
@@ -29,7 +30,7 @@
         @for (msg of messages(); track $index) {
           @if (msg.role === 'user') {
             <div class="flex justify-end">
-              <div class="max-w-[80%] rounded-2xl rounded-tr-md bg-brand-600 px-4 py-2.5 text-sm text-white" [attr.dir]="msg.dir">
+              <div class="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-tr-md bg-brand-600 px-4 py-2.5 text-sm text-white" [attr.dir]="msg.dir">
                 {{ msg.text }}
               </div>
             </div>
@@ -72,7 +73,7 @@
         (keydown)="onKeydown($event)"></textarea>
       <div class="flex items-center justify-between gap-4">
         <p class="text-xs text-brand-400 opacity-70 dark:text-brand-500">
-          Limited to 5 messages / IP / day. &nbsp;·&nbsp; Ctrl+Enter to send.
+          Limited to 5 messages / IP / day. &nbsp;·&nbsp; Ctrl / ⌘+Enter to send.
         </p>
         <button type="button" (click)="ask()"
           class="shrink-0 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
