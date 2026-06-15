@@ -28,6 +28,7 @@ export class AppShellStore {
   /** Secondary routes for advanced features, shown in sidenav and desktop utility area. */
   readonly featureLinks: ReadonlyArray<FeatureLink> = [
     { path: '/interview-me', label: 'Interview Me' },
+    { path: '/architecture', label: 'Architecture' },
     { path: '/resume-studio', label: 'Resume Studio' },
     { path: '/resume-3d', label: '3D Resume' },
   ];

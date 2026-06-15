@@ -1,0 +1,58 @@
+<div class="mx-auto max-w-5xl px-4 py-8 md:px-8">
+  <section class="rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
+
+    <!-- Header -->
+    <div class="mb-6">
+      <h2 class="mb-1 text-2xl font-semibold">Architecture Diagrams</h2>
+      <p class="text-sm text-brand-500 dark:text-brand-400">
+        Visual overview of the full-stack system — infrastructure, data model, and request flows.
+      </p>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="mb-5 flex flex-wrap gap-2 border-b border-brand-100 pb-4 dark:border-brand-800">
+      @for (tab of tabs; track tab.id) {
+        <button type="button" (click)="setTab(tab.id)" [class]="tabClasses(tab)">
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <!-- Active tab description -->
+    <p class="mb-5 rounded-lg border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-brand-700 dark:border-brand-800 dark:bg-brand-900/40 dark:text-brand-300">
+      {{ activeTabData().description }}
+    </p>
+
+    <!-- 1. System Architecture -->
+    <div [class.hidden]="activeTab() !== 'architecture'">
+      <div class="overflow-x-auto rounded-xl border border-brand-100 bg-white p-6">
+        <pre class="mermaid" #diagramEl></pre>
+      </div>
+    </div>
+
+    <!-- 2. Database Schema -->
+    <div [class.hidden]="activeTab() !== 'database'">
+      <div class="overflow-x-auto rounded-xl border border-brand-100 bg-white p-6">
+        <pre class="mermaid" #diagramEl></pre>
+      </div>
+    </div>
+
+    <!-- 3. AI Chat Flow -->
+    <div [class.hidden]="activeTab() !== 'chat-flow'">
+      <div class="overflow-x-auto rounded-xl border border-brand-100 bg-white p-6">
+        <pre class="mermaid" #diagramEl></pre>
+      </div>
+    </div>
+
+    <!-- Key talking points for active tab -->
+    <ul class="mt-4 space-y-1.5 text-sm text-brand-600 dark:text-brand-400">
+      @for (point of activeTabData().points; track $index) {
+        <li class="flex items-start gap-2">
+          <span class="mt-0.5 shrink-0 font-bold text-brand-400">·</span>
+          <span>{{ point }}</span>
+        </li>
+      }
+    </ul>
+
+  </section>
+</div>

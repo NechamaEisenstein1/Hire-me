@@ -7,6 +7,7 @@ import { ResumeStudioPage } from './features/resume-studio/resume-studio.page';
 
 export const routes: Routes = [
   { path: '', component: HomePage },
+  { path: 'architecture', loadComponent: () => import('./features/architecture/architecture.page').then(m => m.ArchitecturePage) },
   { path: 'owner-admin', component: OwnerAdminPage },
   { path: 'resume-studio', component: ResumeStudioPage },
   { path: 'resume-3d', component: Resume3dPage },
