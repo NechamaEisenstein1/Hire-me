@@ -1,88 +1,119 @@
-import { Component, signal } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiError } from '../../core/services/api.service';
 import { ChatbotService } from '../../core/services/chatbot.service';
 
+interface ChatMessage {
+  role: 'user' | 'ai';
+  text: string;
+  isError?: boolean;
+  dir: 'ltr' | 'rtl';
+}
+
 @Component({
   standalone: true,
   imports: [FormsModule],
-  template: `
-    <div class="mx-auto max-w-4xl px-4 py-8 md:px-8">
-    <section class="rounded-2xl border border-brand-200/70 bg-white/70 p-6 shadow-sm backdrop-blur-sm dark:border-brand-700/60 dark:bg-brand-900/35">
-      <h2 class="mb-4 text-2xl font-semibold">Interview Me</h2>
-      <div class="grid gap-3">
-        <textarea [(ngModel)]="question" rows="4" class="w-full rounded-lg border border-brand-300 bg-white p-3 dark:border-brand-700 dark:bg-brand-950/60" placeholder="Ask about architecture decisions, tradeoffs, and delivery." [disabled]="isLoading()" [attr.dir]="containsHebrew(question) ? 'rtl' : 'ltr'" [class.text-right]="containsHebrew(question)" [class.text-left]="!containsHebrew(question)"></textarea>
-        <button type="button" (click)="ask()" class="w-fit rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60" [disabled]="!canAsk()">{{ isLoading() ? 'Thinking...' : 'Ask AI' }}</button>
-      </div>
-      <p class="mt-3 text-xs text-brand-400 dark:text-brand-500 opacity-70">
-        Usage is limited to 5 messages per IP per day to prevent abuse. | השימוש מוגבל ל-5 הודעות ביום לכל IP כדי למנוע ניצול לרעה.
-      </p>
-      <div class="mt-4 rounded-xl border border-brand-200/70 bg-white/70 p-4 dark:border-brand-700/60 dark:bg-brand-950/30" [attr.dir]="answerDirection()" [class.text-right]="answerDirection() === 'rtl'" [class.text-left]="answerDirection() === 'ltr'">
-        <p class="m-0 whitespace-pre-wrap leading-8" [class.text-red-600]="isError()" [class.dark:text-red-300]="isError()">{{ answer() }}</p>
-      </div>
-    </section>
-    </div>
-  `
+  templateUrl: './interview-me.page.html',
 })
-export class InterviewMePage {
-  question = '';
-  readonly answer = signal('');
-  readonly answerDirection = signal<'rtl' | 'ltr'>('ltr');
-  readonly isLoading = signal(false);
-  readonly isError = signal(false);
+export class InterviewMePage implements AfterViewChecked {
+  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
 
-  constructor(private readonly chatbot: ChatbotService) { }
+  question = '';
+  readonly messages = signal<ChatMessage[]>([]);
+  readonly isLoading = signal(false);
+  private shouldScrollToBottom = false;
+
+  readonly suggestedQuestions = [
+    'What architecture decisions shaped this project?',
+    'Walk me through the AI chat integration.',
+    'How do you manage async DB operations and connection pooling?',
+    'What tradeoffs did you make when choosing this tech stack?',
+    'How is JWT authentication and rate limiting implemented?',
+    'מה הניסיון שלך עם פריסה לענן ו-Terraform?',
+  ];
+
+  constructor(private readonly chatbot: ChatbotService) {}
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
 
   canAsk(): boolean {
     return !this.isLoading() && this.question.trim().length > 0;
   }
 
-  async ask(): Promise<void> {
-    if (this.isLoading()) {
-      return;
-    }
-    const prompt = this.question.trim();
-    if (!prompt) {
-      return;
-    }
-
-    this.isLoading.set(true);
-    this.isError.set(false);
-    try {
-      const response = await this.chatbot.ask(prompt);
-      this.setAnswerMessage(response, false);
-    } catch (error: unknown) {
-      if (error instanceof ApiError && error.status === 429) {
-        this.setAnswerMessage(
-          'You have reached the daily message limit (5/day). Please try again tomorrow. | הגעת למגבלת ההודעות היומית (5 ביום). אפשר לנסות שוב מחר.',
-          true
-        );
-      } else if (error instanceof ApiError) {
-        this.setAnswerMessage(
-          error.message?.trim() || 'Unable to get a response right now. Please try again in a moment.',
-          true
-        );
-      } else {
-        this.setAnswerMessage(
-          this.containsHebrew(prompt)
-            ? 'כרגע לא הצלחתי לטעון תשובה. אפשר לנסות שוב בעוד רגע.'
-            : 'Unable to get a response right now. Please try again in a moment.',
-          true
-        );
-      }
-    } finally {
-      this.isLoading.set(false);
+  onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      this.ask();
     }
   }
 
-  private setAnswerMessage(message: string, isError: boolean): void {
-    this.isError.set(isError);
-    this.answer.set(message);
-    this.answerDirection.set(this.containsHebrew(message) ? 'rtl' : 'ltr');
+  askSuggested(q: string): void {
+    this.question = q;
+    this.ask();
+  }
+
+  clearConversation(): void {
+    this.messages.set([]);
+    this.question = '';
+  }
+
+  async ask(): Promise<void> {
+    if (!this.canAsk()) return;
+
+    const prompt = this.question.trim();
+    this.question = '';
+
+    this.messages.update(msgs => [
+      ...msgs,
+      { role: 'user', text: prompt, dir: this.containsHebrew(prompt) ? 'rtl' : 'ltr' },
+    ]);
+    this.shouldScrollToBottom = true;
+
+    this.isLoading.set(true);
+    try {
+      const response = await this.chatbot.ask(prompt);
+      this.messages.update(msgs => [
+        ...msgs,
+        { role: 'ai', text: response, dir: this.containsHebrew(response) ? 'rtl' : 'ltr' },
+      ]);
+    } catch (error: unknown) {
+      const errorText = this.buildErrorMessage(error, prompt);
+      this.messages.update(msgs => [
+        ...msgs,
+        { role: 'ai', text: errorText, isError: true, dir: this.containsHebrew(errorText) ? 'rtl' : 'ltr' },
+      ]);
+    } finally {
+      this.isLoading.set(false);
+      this.shouldScrollToBottom = true;
+    }
   }
 
   containsHebrew(text: string): boolean {
     return /[\u0590-\u05FF]/.test(text);
+  }
+
+  private buildErrorMessage(error: unknown, prompt: string): string {
+    if (error instanceof ApiError && error.status === 429) {
+      return 'You have reached the daily message limit (5/day). Please try again tomorrow. | הגעת למגבלת ההודעות היומית (5 ביום). אפשר לנסות שוב מחר.';
+    }
+    if (error instanceof ApiError) {
+      return error.message?.trim() || 'Unable to get a response right now. Please try again in a moment.';
+    }
+    return this.containsHebrew(prompt)
+      ? 'כרגע לא הצלחתי לטעון תשובה. אפשר לנסות שוב בעוד רגע.'
+      : 'Unable to get a response right now. Please try again in a moment.';
+  }
+
+  private scrollToBottom(): void {
+    const el = this.messagesContainer?.nativeElement;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }
 }
