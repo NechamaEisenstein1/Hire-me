@@ -72,6 +72,13 @@ import { AppShellStore } from './core/stores/app-shell.store';
 
         <!-- Feature CTAs (desktop) -->
         <a
+          routerLink="/architecture"
+          mat-stroked-button
+          class="hidden text-sm md:inline-flex"
+        >
+          Architecture
+        </a>
+        <a
           routerLink="/resume-3d"
           mat-stroked-button
           class="hidden text-sm md:inline-flex"
