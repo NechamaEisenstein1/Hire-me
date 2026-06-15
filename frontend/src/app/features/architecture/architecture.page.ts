@@ -185,19 +185,21 @@ export class ArchitecturePage implements AfterViewInit {
 
   async setTab(tab: DiagramTab): Promise<void> {
     this.activeTab.set(tab);
-    // Wait one microtask for Angular to remove [hidden] from the newly active panel
-    // before mermaid tries to compute edge paths (needs real DOM dimensions).
+    // setTimeout(0) queues a macrotask, giving Angular one turn to apply the
+    // [class.hidden] binding and make the panel visible before Mermaid measures
+    // DOM dimensions for edge-path calculations.
     await new Promise<void>(resolve => setTimeout(resolve, 0));
     await this.renderTab(tab);
   }
 
   private async renderTab(tab: DiagramTab): Promise<void> {
     if (this.renderedTabs.has(tab)) return;
-    this.renderedTabs.add(tab);
     const idx = this.tabs.findIndex(t => t.id === tab);
     const el = this.diagramEls.get(idx)!.nativeElement;
     el.textContent = this.diagramContents[tab];
     await mermaid.run({ nodes: [el] });
+    // Mark as rendered only after a successful run so failed attempts can retry.
+    this.renderedTabs.add(tab);
   }
 
   tabClasses(tab: Tab): string {

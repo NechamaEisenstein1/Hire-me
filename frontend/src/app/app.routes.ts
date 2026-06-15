@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { ArchitecturePage } from './features/architecture/architecture.page';
 import { HomePage } from './features/home/home.page';
 import { InterviewMePage } from './features/interview-me/interview-me.page';
 import { OwnerAdminPage } from './features/owner-admin/owner-admin.page';
@@ -8,7 +7,7 @@ import { ResumeStudioPage } from './features/resume-studio/resume-studio.page';
 
 export const routes: Routes = [
   { path: '', component: HomePage },
-  { path: 'architecture', component: ArchitecturePage },
+  { path: 'architecture', loadComponent: () => import('./features/architecture/architecture.page').then(m => m.ArchitecturePage) },
   { path: 'owner-admin', component: OwnerAdminPage },
   { path: 'resume-studio', component: ResumeStudioPage },
   { path: 'resume-3d', component: Resume3dPage },
