@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { ApiError, ApiService } from '../../core/services/api.service';
@@ -15,7 +15,7 @@ type VerifyResponse = { valid: boolean };
   templateUrl: './owner-admin.page.html',
   styleUrl: './owner-admin.page.css'
 })
-export class OwnerAdminPage {
+export class OwnerAdminPage implements OnDestroy {
   private readonly api = inject(ApiService);
   private readonly analytics = inject(AnalyticsService);
   private static readonly ownerTokenStorageKey = 'resume-owner-token';
@@ -31,6 +31,12 @@ export class OwnerAdminPage {
   readonly resumeFileName = signal<string | null>(null);
   readonly resumeFile = signal<File | null>(null);
   readonly todayStats = signal<AdminTodayStats>({ visitors_today: 0, resume_downloads_today: 0 });
+  readonly activeVisitors = signal<number | null>(null);
+  readonly isPresenceConnected = signal(false);
+
+  private visitorsSocket: WebSocket | null = null;
+  private reconnectTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+  private socketClosedManually = false;
 
   readonly canPublish = computed(() => this.ownerUnlocked() && !!this.resume() && !this.isPublishing());
 
@@ -48,13 +54,19 @@ export class OwnerAdminPage {
       this.ownerUnlocked.set(true);
       globalThis.sessionStorage.setItem(OwnerAdminPage.ownerTokenStorageKey, token);
       this.statusMessage.set('Admin unlocked successfully.');
+      this.connectVisitorsPresence();
       await this.refreshTodayStats();
     } catch (error: unknown) {
       this.ownerUnlocked.set(false);
+      this.disconnectVisitorsPresence();
       this.statusMessage.set(error instanceof ApiError ? error.message : 'Owner verification failed.');
     } finally {
       this.isVerifyingOwner.set(false);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.disconnectVisitorsPresence();
   }
 
   onDragOver(event: DragEvent): void {
@@ -163,6 +175,95 @@ export class OwnerAdminPage {
     } finally {
       this.isParsing.set(false);
     }
+  }
+
+  private connectVisitorsPresence(): void {
+    if (!this.ownerUnlocked() || typeof WebSocket === 'undefined' || this.visitorsSocket) {
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      globalThis.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.socketClosedManually = false;
+
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(this.buildVisitorsWsUrl());
+    } catch {
+      this.isPresenceConnected.set(false);
+      this.schedulePresenceReconnect();
+      return;
+    }
+
+    this.visitorsSocket = socket;
+
+    socket.onopen = () => {
+      this.isPresenceConnected.set(true);
+    };
+
+    socket.onmessage = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data) as { active_visitors?: unknown };
+        if (typeof payload.active_visitors === 'number') {
+          this.activeVisitors.set(payload.active_visitors);
+        }
+      } catch {
+        // Ignore malformed payloads so presence stream stays resilient.
+      }
+    };
+
+    socket.onerror = () => {
+      this.isPresenceConnected.set(false);
+    };
+
+    socket.onclose = () => {
+      this.visitorsSocket = null;
+      this.isPresenceConnected.set(false);
+
+      this.schedulePresenceReconnect();
+    };
+  }
+
+  private schedulePresenceReconnect(): void {
+    if (this.socketClosedManually || !this.ownerUnlocked() || this.reconnectTimer) {
+      return;
+    }
+
+    this.reconnectTimer = globalThis.setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connectVisitorsPresence();
+    }, 1500);
+  }
+
+  private disconnectVisitorsPresence(): void {
+    if (this.reconnectTimer) {
+      globalThis.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    this.socketClosedManually = true;
+    this.isPresenceConnected.set(false);
+    this.activeVisitors.set(null);
+
+    if (this.visitorsSocket) {
+      this.visitorsSocket.close();
+      this.visitorsSocket = null;
+    }
+  }
+
+  private buildVisitorsWsUrl(): string {
+    const configuredApiBase = environment.apiBaseUrl.trim();
+    const resolvedBase = configuredApiBase ? new URL(configuredApiBase, globalThis.location.origin) : new URL(globalThis.location.origin);
+
+    resolvedBase.protocol = resolvedBase.protocol === 'https:' ? 'wss:' : 'ws:';
+    resolvedBase.pathname = '/ws/visitors';
+    resolvedBase.search = '';
+    resolvedBase.hash = '';
+
+    return resolvedBase.toString();
   }
 }
 

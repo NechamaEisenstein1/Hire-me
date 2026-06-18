@@ -32,7 +32,13 @@
   </div>
 
   @if (ownerUnlocked()) {
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm dark:border-brand-700/60 dark:bg-brand-900/40">
+        <p class="m-0 text-xs uppercase tracking-[0.12em] opacity-70">Active Now</p>
+        <p class="m-0 mt-2 text-4xl font-bold">{{ activeVisitors() ?? '—' }}</p>
+        <p class="m-0 mt-1 text-xs opacity-70">{{ isPresenceConnected() ? 'Live via WebSocket' : 'Connecting...' }}</p>
+      </div>
+
       <div class="rounded-2xl border border-brand-200/70 bg-white/80 p-5 shadow-sm dark:border-brand-700/60 dark:bg-brand-900/40">
         <p class="m-0 text-xs uppercase tracking-[0.12em] opacity-70">Visitors Today</p>
         <p class="m-0 mt-2 text-4xl font-bold">{{ todayStats().visitors_today }}</p>
