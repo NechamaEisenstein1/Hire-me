@@ -36,9 +36,10 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
   readonly loadingMessage = signal('Loading profile...');
   readonly projects = signal<Project[]>([]);
   readonly projectsLoading = signal(true);
+  readonly githubStats = signal<{ followers: number; stars: number; publicRepos: number } | null>(null);
 
   async ngOnInit(): Promise<void> {
-    await this.loadProfile();
+    await this.loadHomeSnapshot();
     void this.loadProjects();
   }
 
@@ -120,6 +121,81 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
       // Fallback: resume profile projects shown in template
     } finally {
       this.projectsLoading.set(false);
+    }
+  }
+
+  private async loadHomeSnapshot(): Promise<void> {
+    type GraphQLResponse<T> = {
+      data?: T;
+      errors?: Array<{ message?: string }>;
+    };
+
+    type HomeSnapshotQuery = {
+      resumeProfile?: ParsedResume;
+      githubStats?: {
+        followers: number;
+        stars: number;
+        publicRepos: number;
+      };
+    };
+
+    const query = `
+      query HomeSnapshot {
+        resumeProfile {
+          name
+          title
+          location
+          email
+          githubUsername
+          resumeFileName
+          summary
+          skills
+          experience {
+            role
+            company
+            period
+            highlights
+          }
+          projects {
+            name
+            summary
+            stack
+          }
+          education {
+            degree
+            school
+            period
+          }
+        }
+        githubStats {
+          followers
+          stars
+          publicRepos
+        }
+      }
+    `;
+
+    try {
+      const response = await this.api.post<GraphQLResponse<HomeSnapshotQuery>>('/graphql', { query });
+      if (response.errors?.length) {
+        throw new Error('GraphQL snapshot query failed.');
+      }
+
+      if (response.data?.resumeProfile) {
+        this.profile.set(response.data.resumeProfile);
+        this.shellStore.setCandidateName(response.data.resumeProfile.name);
+      }
+
+      if (response.data?.githubStats) {
+        this.githubStats.set(response.data.githubStats);
+      }
+
+      if (!response.data?.resumeProfile) {
+        await this.loadProfile();
+      }
+    } catch {
+      // Preserve existing Home flow when GraphQL is unavailable.
+      await this.loadProfile();
     }
   }
 }
