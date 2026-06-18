@@ -188,7 +188,16 @@ export class OwnerAdminPage implements OnDestroy {
     }
 
     this.socketClosedManually = false;
-    const socket = new WebSocket(this.buildVisitorsWsUrl());
+
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(this.buildVisitorsWsUrl());
+    } catch {
+      this.isPresenceConnected.set(false);
+      this.schedulePresenceReconnect();
+      return;
+    }
+
     this.visitorsSocket = socket;
 
     socket.onopen = () => {
@@ -214,13 +223,19 @@ export class OwnerAdminPage implements OnDestroy {
       this.visitorsSocket = null;
       this.isPresenceConnected.set(false);
 
-      if (!this.socketClosedManually && this.ownerUnlocked()) {
-        this.reconnectTimer = globalThis.setTimeout(() => {
-          this.reconnectTimer = null;
-          this.connectVisitorsPresence();
-        }, 1500);
-      }
+      this.schedulePresenceReconnect();
     };
+  }
+
+  private schedulePresenceReconnect(): void {
+    if (this.socketClosedManually || !this.ownerUnlocked() || this.reconnectTimer) {
+      return;
+    }
+
+    this.reconnectTimer = globalThis.setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connectVisitorsPresence();
+    }, 1500);
   }
 
   private disconnectVisitorsPresence(): void {

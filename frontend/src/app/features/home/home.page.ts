@@ -177,20 +177,17 @@ export class HomePage implements OnInit, AfterViewInit, OnDestroy {
 
     try {
       const response = await this.api.post<GraphQLResponse<HomeSnapshotQuery>>('/graphql', { query });
-      if (response.errors?.length) {
-        throw new Error('GraphQL snapshot query failed.');
-      }
-
-      if (response.data?.resumeProfile) {
-        this.profile.set(response.data.resumeProfile);
-        this.shellStore.setCandidateName(response.data.resumeProfile.name);
+      const resumeProfile = response.data?.resumeProfile;
+      if (resumeProfile) {
+        this.profile.set(resumeProfile);
+        this.shellStore.setCandidateName(resumeProfile.name);
       }
 
       if (response.data?.githubStats) {
         this.githubStats.set(response.data.githubStats);
       }
 
-      if (!response.data?.resumeProfile) {
+      if (!resumeProfile) {
         await this.loadProfile();
       }
     } catch {

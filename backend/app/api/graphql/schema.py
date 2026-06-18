@@ -135,7 +135,9 @@ class Query:
 
         try:
             service = GitHubService(
-                username=settings.github_username, token=settings.github_token
+                username=settings.github_username,
+                token=settings.github_token,
+                verify_tls=settings.ai_verify_tls,
             )
             stats: GitHubStats = await service.fetch_stats()
             return GitHubStatsType(
